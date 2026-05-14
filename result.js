@@ -42,6 +42,38 @@ const restartButton = document.querySelector('#restart-result');
 const resultEmptyTitle = document.querySelector('#result-empty-title');
 const resultEmptyCopy = document.querySelector('#result-empty-copy');
 const resultCatalogIntro = document.querySelector('#result-catalog-intro');
+const resultPageTitle = document.querySelector('#result-page-title');
+const resultHeroEyebrow = document.querySelector('#result-hero-eyebrow');
+const resultCatalogSection = document.querySelector('#result-catalog-section');
+const floatingQuizCta = document.querySelector('#floating-quiz-cta');
+
+const DEFAULT_RESULT_HEADING = '你的恋爱人格配方';
+const DEFAULT_HERO_EYEBROW = '你的 CPTI 配方';
+const DEFAULT_DOC_TITLE = 'CPTI | 恋爱人格结果';
+
+const resetShareViewerChrome = () => {
+  document.title = DEFAULT_DOC_TITLE;
+  if (resultPageTitle) resultPageTitle.textContent = DEFAULT_RESULT_HEADING;
+  if (resultHeroEyebrow) resultHeroEyebrow.textContent = DEFAULT_HERO_EYEBROW;
+  resultCatalogSection?.classList.remove('hidden');
+  shareButton?.classList.remove('hidden');
+  matchShareButton?.classList.remove('hidden');
+  floatingQuizCta?.classList.add('hidden');
+  restartButton?.classList.remove('hidden');
+  document.body.classList.remove('is-share-viewer');
+};
+
+const applyShareViewerChrome = () => {
+  document.title = 'Ta的恋爱人格配方 | CPTI';
+  if (resultPageTitle) resultPageTitle.textContent = 'Ta的恋爱人格配方';
+  if (resultHeroEyebrow) resultHeroEyebrow.textContent = 'Ta 的 CPTI 配方';
+  resultCatalogSection?.classList.add('hidden');
+  shareButton?.classList.add('hidden');
+  matchShareButton?.classList.add('hidden');
+  floatingQuizCta?.classList.remove('hidden');
+  restartButton?.classList.add('hidden');
+  document.body.classList.add('is-share-viewer');
+};
 
 let lastComputed = null;
 let autoShareOpened = false;
@@ -95,6 +127,7 @@ const loadPayload = () => {
 };
 
 const showEmptyState = (reason = 'default') => {
+  resetShareViewerChrome();
   resultEmpty?.classList.remove('hidden');
   resultView?.classList.add('hidden');
   floatingShareActions?.classList.add('hidden');
@@ -2443,17 +2476,25 @@ const renderComputedView = (computed) => {
   renderResultHeroCast(computed.selfProfile, computed.needProfile);
   const selfRarityLabel = getProfileRarityLabel(computed.selfProfile?.id);
   const needRarityLabel = getProfileRarityLabel(computed.needProfile?.id);
-  const summaryText = `恭喜你，测出来你是属于稀有度${selfRarityLabel}的${computed.selfProfile?.name}型恋爱人格，和你最匹配的是稀有度${needRarityLabel}的${computed.needProfile?.name}型恋爱人格。`;
+  const ownerHeadingSummary = `恭喜你，测出来你是属于稀有度${selfRarityLabel}的${computed.selfProfile?.name}型恋爱人格，和你最匹配的是稀有度${needRarityLabel}的${computed.needProfile?.name}型恋爱人格。`;
   formulaSummary.textContent = computed.formulaSummary;
 
-  if (resultHeadingSummary) {
-    resultHeadingSummary.textContent = computed.fromLinkSnapshot
-      ? `（来自分享链接）${summaryText}`
-      : summaryText;
+  if (computed.fromLinkSnapshot) {
+    applyShareViewerChrome();
+    if (resultHeadingSummary) {
+      resultHeadingSummary.textContent = computed.linkSnapshotHeadingIntro || '';
+    }
+  } else {
+    resetShareViewerChrome();
+    if (resultHeadingSummary) {
+      resultHeadingSummary.textContent = ownerHeadingSummary;
+    }
   }
 
-  selfResult.innerHTML = panelHtml('你的恋爱人格', computed.selfProfile, computed.selfConfidence, 'self');
-  needResult.innerHTML = panelHtml('最和你匹配的类型', computed.needProfile, computed.needConfidence, 'need');
+  const selfPanelTitle = computed.fromLinkSnapshot ? 'Ta 的恋爱人格' : '你的恋爱人格';
+  const needPanelTitle = computed.fromLinkSnapshot ? '和 Ta 最匹配的类型' : '最和你匹配的类型';
+  selfResult.innerHTML = panelHtml(selfPanelTitle, computed.selfProfile, computed.selfConfidence, 'self');
+  needResult.innerHTML = panelHtml(needPanelTitle, computed.needProfile, computed.needConfidence, 'need');
 
   const panelPalette = getResultPanelPalette(computed.gender);
   selfResult.style.background = panelPalette.self.background;
@@ -2469,9 +2510,13 @@ const renderComputedView = (computed) => {
     resultCatalogIntro.textContent = `下面这${profileCount}个类型，既可能是你自己，也可能是最和你匹配的恋人类型；点开卡片还能继续看完整详情。`;
   }
 
-  profileCatalog.innerHTML = Object.values(profiles)
-    .map((profile) => catalogHtml(profile, computed.selfProfile.id, computed.needProfile.id))
-    .join('');
+  if (computed.fromLinkSnapshot) {
+    profileCatalog.innerHTML = '';
+  } else {
+    profileCatalog.innerHTML = Object.values(profiles)
+      .map((profile) => catalogHtml(profile, computed.selfProfile.id, computed.needProfile.id))
+      .join('');
+  }
 
   lastComputed = computed;
   autoShareOpened = false;
