@@ -1966,7 +1966,7 @@ const generateShareImage = async (computed, options = {}) => {
     x: cardX + cardPadding,
     y: cursorY,
     width: portraitWidth,
-    title: '侧写',
+    title: '角色简介',
     lines: introLines,
   });
 
@@ -1976,7 +1976,7 @@ const generateShareImage = async (computed, options = {}) => {
     x: cardX + cardPadding,
     y: cursorY,
     width: portraitWidth,
-    title: '专属台词',
+    title: '专属技能',
     lines: skillLines,
   });
 
