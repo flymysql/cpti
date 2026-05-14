@@ -8,6 +8,7 @@ const {
   calculateResults,
   buildResultQueryString,
   profiles,
+  RASTER_AVATAR_EXPLICIT_IDS,
   resolveRasterAvatarThumbUrl,
 } = window.CPTI_DATA;
 
@@ -327,15 +328,37 @@ const renderQuestions = () => {
   quizMasonry.innerHTML = questions.map((question, index) => cardHtml(question, index)).join('');
 };
 
-const stageCharacterProfiles = [
-  { profile: profiles.badboy, positionClass: 'is-left' },
-  { profile: profiles.solo, positionClass: 'is-right' },
-].filter(({ profile }) => profile);
+/** Progress bar + stage toasts: always one male + one female thumb; personas picked once per load. */
+let progressBarCastPickCache = null;
 
-const stageAvatarHtml = (profile, className = 'stage-toast-avatar') => {
+const getProgressBarCastRows = () => {
+  if (progressBarCastPickCache) return progressBarCastPickCache;
+  const dualIds = Object.keys(profiles).filter((id) => !RASTER_AVATAR_EXPLICIT_IDS.has(id));
+  if (!dualIds.length) {
+    progressBarCastPickCache = [];
+    return progressBarCastPickCache;
+  }
+  const pick = () => dualIds[Math.floor(Math.random() * dualIds.length)];
+  let leftId = pick();
+  let rightId = pick();
+  let tries = 0;
+  while (rightId === leftId && dualIds.length > 1 && tries < 40) {
+    rightId = pick();
+    tries += 1;
+  }
+  const leftProfile = profiles[leftId];
+  const rightProfile = profiles[rightId];
+  progressBarCastPickCache = [
+    ...(leftProfile ? [{ profile: leftProfile, positionClass: 'is-left', thumbGender: 'male' }] : []),
+    ...(rightProfile ? [{ profile: rightProfile, positionClass: 'is-right', thumbGender: 'female' }] : []),
+  ];
+  return progressBarCastPickCache;
+};
+
+const stageAvatarHtml = (profile, className = 'stage-toast-avatar', thumbGender = 'male') => {
   const src = resolveRasterAvatarThumbUrl(profile.id, {
-    quizCompleted: Boolean(state.gender),
-    userGender: state.gender || '',
+    quizCompleted: true,
+    userGender: thumbGender,
   });
   return `
   <div class='avatar-shell small ${className}' style='--avatar-accent:${profile.accent}; --avatar-soft:${profile.soft};'>
@@ -346,18 +369,19 @@ const stageAvatarHtml = (profile, className = 'stage-toast-avatar') => {
 
 const renderStageCharacters = (target, avatarClassName, wrapClassName) => {
   if (!target) return;
-  if (!stageCharacterProfiles.length) {
+  const rows = getProgressBarCastRows();
+  if (!rows.length) {
     target.hidden = true;
     target.innerHTML = '';
     return;
   }
 
   target.hidden = false;
-  target.innerHTML = stageCharacterProfiles
-    .map(({ profile, positionClass }) => `
+  target.innerHTML = rows
+    .map(({ profile, positionClass, thumbGender }) => `
       <div class='${wrapClassName} ${positionClass}'>
         <div class='stage-toast-character-bob'>
-          ${stageAvatarHtml(profile, avatarClassName)}
+          ${stageAvatarHtml(profile, avatarClassName, thumbGender)}
         </div>
       </div>
     `)
@@ -412,7 +436,7 @@ const renderStageJourney = () => {
   const allDone = answered === total;
   const currentCopy = getStageCopy(currentStage.category);
   const progressPercent = total ? (answered / total) * 100 : 0;
-  const widthPercent = stageCharacterProfiles.length
+  const widthPercent = getProgressBarCastRows().length
     ? Math.max(progressPercent, 18)
     : progressPercent;
 
