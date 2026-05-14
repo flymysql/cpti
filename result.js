@@ -58,7 +58,7 @@ let shareCarouselHoldStartX = 0;
 let shareCarouselHoldStartY = 0;
 const SHARE_CAROUSEL_INTERVAL_MS = 5000;
 const SHARE_CAROUSEL_PAUSE_HOLD_MS = 450;
-const SHARE_AVATAR_FRAME_SIDES = 8;
+const SHARE_AVATAR_FRAME_SIDES = 6;
 
 const getResultPageShareUrl = (computed) => {
   const qs = buildResultQueryString(computed);
@@ -740,7 +740,7 @@ const drawDiamondFrame = (ctx, cx, cy, size, options = {}) => {
   }
 };
 
-/** Regular n-gon (flat sides), e.g. octagon for `sides = 8`. */
+/** Regular n-gon (flat sides), e.g. hexagon for `sides = 6`. */
 const drawRegularPolygonPath = (ctx, cx, cy, radius, sides = 12) => {
   ctx.beginPath();
   for (let i = 0; i < sides; i += 1) {
@@ -753,7 +753,7 @@ const drawRegularPolygonPath = (ctx, cx, cy, radius, sides = 12) => {
   ctx.closePath();
 };
 
-const drawPolygonVertexSparkle = (ctx, cx, cy, radius, accent, compact, sides = 8) => {
+const drawPolygonVertexSparkle = (ctx, cx, cy, radius, accent, compact, sides = 6) => {
   const rGlow = compact ? 7 : 10;
   for (let k = 0; k < sides; k += 1) {
     const a = -Math.PI / 2 + (k * 2 * Math.PI) / sides;
