@@ -36,6 +36,7 @@ const stageToastCopy = document.querySelector('#stage-toast-copy');
 let isSubmitBarVisible = false;
 let stageToastTimer = null;
 let stageProgressTimer = null;
+let milestonePulseTimer = null;
 
 
 
@@ -47,41 +48,74 @@ const initialState = {
 
 const STAGE_COPY = {
   '探索期': {
-    title: '刚认识，雷达刚启动',
-    intro: '先感受彼此的第一眼吸引力，也看看你会怎么放出信号。',
-    completion: '你们已经从刚认识互相吸引，走到开始有点暧昧的阶段啦~',
+    title: '关卡 01｜雷达刚开机',
+    intro: '像新手村：先感受第一眼吸引力，也看看你会怎么放出信号。',
+    completion: '恭喜通关「探索期」——暧昧副本已解锁，继续点选你的真实反应就好~',
   },
   '心动期': {
-    title: '开始靠近，气氛在升温',
-    intro: '这段更像试探和上头并行，关系开始往前推。',
-    completion: '心动值已经明显升高，接下来就是确认心意和继续升温啦~',
+    title: '关卡 02｜心动条在涨',
+    intro: '试探和上头并行，像 combo 连击：关系开始往前推。',
+    completion: '心动值明显飙升！下一关会更考验「你敢不敢把喜欢说清楚」。',
   },
   '甜蜜期': {
-    title: '确定心意，滤镜最厚的时候',
-    intro: '你会怎么面对表白、约会和热恋初期的化学反应？',
-    completion: '热恋滤镜慢慢退场，真正的相处和磨合要开始啦~',
+    title: '关卡 03｜热恋滤镜 ON',
+    intro: '表白、约会、热恋化学反应——选最像你的那一招。',
+    completion: '高糖阶段存档完毕～滤镜会慢慢变薄，真实相处副本要开场啦。',
   },
   '磨合期': {
-    title: '开始相处，也开始看见不同',
-    intro: '当关系进入日常，你们会如何处理误差、距离和情绪？',
-    completion: '你们已经挺过相处考验，正在走向更稳定的关系阶段。',
+    title: '关卡 04｜日常里见真章',
+    intro: '距离、误会、情绪温差都会出现：你怎么拆招？',
+    completion: '磨合关通过！你们已经更像「能一起修 bug 的队友」了。',
   },
   '稳定期': {
-    title: '一起经营，把喜欢过成日常',
-    intro: '这时更考验长期价值观、爱的表达方式和彼此分工。',
-    completion: '关系更深了，接下来也会慢慢碰到底线、冲突和真正的选择。',
+    title: '关卡 05｜长线运营',
+    intro: '价值观、表达方式、分工——把喜欢过成日常的隐藏题。',
+    completion: '稳定羁绊 +1。再往前，会碰到底线与选择的硬题哦。',
   },
   '冲突期': {
-    title: '情绪升温，底线也浮出来',
-    intro: '冲突会暴露真实的沟通习惯，也会暴露你的不退让之处。',
-    completion: '最难的一关快过了，接下来会看到你如何面对结束与体面。',
+    title: '关卡 06｜情绪 Boss 战',
+    intro: '冲突像放大器：沟通习惯、底线、谁先低头，一次看清。',
+    completion: '最难的波次快结束了——下一章看你如何体面收尾或翻盘。',
   },
   '结束期': {
-    title: '故事收尾，你会怎么体面离场',
-    intro: '关系的最后一段，也很能看出你怎样对待自己和对方。',
-    completion: '整段关系旅程你都走完了，可以去生成结果了。',
+    title: '关卡 07｜终幕演出',
+    intro: '故事收尾时，你怎么对自己、也对 Ta 交代？',
+    completion: '全剧情通关！去生成你的「恋爱角色卡」吧——记得长按保存分享图。',
   },
 };
+
+const MILESTONE_TOASTS = {
+  25: {
+    kicker: '进度 Buff',
+    title: '已完成约 25%',
+    copy: '牌组暖机完毕～后段会有几次关键抉择，选最真实的你就对了。',
+  },
+  50: {
+    kicker: '中场结算',
+    title: '过半啦！',
+    copy: '像打完上半场：喝口水，继续把直觉交给下一组题目。',
+  },
+  75: {
+    kicker: 'Boss 门前',
+    title: '约 75% 啦',
+    copy: '最后一段最考验本能反应；坚持一下，你的「命中感」会更准。',
+  },
+};
+
+const milestoneAnnounced = new Set();
+const chapterMicroShown = new Set();
+
+const restoreMilestoneFlags = () => {
+  const answered = countAnswered(state.answers);
+  const total = questions.length;
+  if (!total) return;
+  const ratio = answered / total;
+  [25, 50, 75].forEach((pct) => {
+    if (ratio >= pct / 100 - 0.0001) milestoneAnnounced.add(pct);
+  });
+};
+
+restoreMilestoneFlags();
 
 const stageGroups = questions.reduce((groups, question, index) => {
   const lastGroup = groups[groups.length - 1];
@@ -181,6 +215,8 @@ const clearAll = () => {
   state.gender = '';
   localStorage.removeItem(STORAGE.progressKey);
   localStorage.removeItem(STORAGE.resultKey);
+  milestoneAnnounced.clear();
+  chapterMicroShown.clear();
 };
 
 const optionHtml = (questionId, option, index, isSelected) => `
@@ -418,8 +454,11 @@ const hideStageToast = () => {
     window.clearTimeout(stageToastTimer);
     stageToastTimer = null;
   }
-  stageToast.classList.remove('is-visible');
+  stageToast.classList.remove('is-visible', 'is-micro');
   stageToast.hidden = true;
+  if (stageToastCast) {
+    stageToastCast.hidden = false;
+  }
 };
 
 const pulseStageProgress = () => {
@@ -433,29 +472,110 @@ const pulseStageProgress = () => {
   }, 900);
 };
 
-const showStageTransition = (completedStageIndex) => {
+const pulseMilestoneProgress = () => {
+  if (!stageFloatingProgress) return;
+  if (milestonePulseTimer) window.clearTimeout(milestonePulseTimer);
+  stageFloatingProgress.classList.remove('is-milestone-pulse');
+  void stageFloatingProgress.offsetWidth;
+  stageFloatingProgress.classList.add('is-milestone-pulse');
+  milestonePulseTimer = window.setTimeout(() => {
+    stageFloatingProgress.classList.remove('is-milestone-pulse');
+  }, 900);
+};
+
+const showStageToastMessage = ({
+  kicker,
+  title,
+  copy,
+  duration = 5600,
+  micro = false,
+} = {}) => {
   if (!stageToast) return;
-
-  const completedStage = stageGroups[completedStageIndex];
-  const nextStage = stageGroups[completedStageIndex + 1];
-  const completedCopy = getStageCopy(completedStage?.category || '');
-
-  stageToastKicker.textContent = nextStage ? '阶段推进' : '阶段完成';
-  stageToastTitle.textContent = nextStage
-    ? `已进入 ${nextStage.category}`
-    : '全部时期已完成';
-  stageToastCopy.textContent = completedCopy.completion;
+  stageToastKicker.textContent = kicker;
+  stageToastTitle.textContent = title;
+  stageToastCopy.textContent = copy;
+  stageToast.classList.toggle('is-micro', micro);
+  if (stageToastCast) {
+    stageToastCast.hidden = micro;
+  }
 
   if (stageToastTimer) window.clearTimeout(stageToastTimer);
   stageToast.hidden = false;
   stageToast.classList.remove('is-visible');
   void stageToast.offsetWidth;
   stageToast.classList.add('is-visible');
-  pulseStageProgress();
+
+  if (micro) {
+    pulseMilestoneProgress();
+  } else {
+    pulseStageProgress();
+  }
 
   stageToastTimer = window.setTimeout(() => {
     hideStageToast();
-  }, 6000);
+  }, duration);
+};
+
+const showStageTransition = (completedStageIndex) => {
+  const completedStage = stageGroups[completedStageIndex];
+  const nextStage = stageGroups[completedStageIndex + 1];
+  const completedCopy = getStageCopy(completedStage?.category || '');
+
+  showStageToastMessage({
+    kicker: nextStage ? '关卡推进' : '全关卡通关',
+    title: nextStage ? `进入「${nextStage.category}」` : '全部关系阶段已通关',
+    copy: completedCopy.completion,
+    duration: 6200,
+    micro: false,
+  });
+};
+
+const tryChapterOpeningToast = (previousAnswers) => {
+  const stageIndex = getCurrentStageIndex(state.answers);
+  const stage = stageGroups[stageIndex];
+  if (!stage) return;
+  const before = getStageAnsweredCount(stage, previousAnswers);
+  const after = getStageAnsweredCount(stage, state.answers);
+  if (before !== 0 || after !== 1) return;
+  if (chapterMicroShown.has(stage.category)) return;
+
+  window.setTimeout(() => {
+    if (stageToast?.classList.contains('is-visible')) return;
+    if (chapterMicroShown.has(stage.category)) return;
+    chapterMicroShown.add(stage.category);
+    const copy = getStageCopy(stage.category);
+    if (!copy) return;
+    showStageToastMessage({
+      kicker: '章节开幕',
+      title: copy.title,
+      copy: copy.intro,
+      duration: 3600,
+      micro: true,
+    });
+  }, 260);
+};
+
+const tryAnnounceMilestone = () => {
+  const answered = countAnswered(state.answers);
+  const total = questions.length;
+  if (!total || answered === 0) return;
+  const ratio = answered / total;
+  [25, 50, 75].forEach((pct) => {
+    if (ratio < pct / 100) return;
+    if (milestoneAnnounced.has(pct)) return;
+    window.setTimeout(() => {
+      if (milestoneAnnounced.has(pct)) return;
+      if (stageToast?.classList.contains('is-visible')) return;
+      const payload = MILESTONE_TOASTS[pct];
+      if (!payload) return;
+      milestoneAnnounced.add(pct);
+      showStageToastMessage({
+        ...payload,
+        duration: 3800,
+        micro: true,
+      });
+    }, 520);
+  });
 };
 
 const syncStageJourney = ({ previousCompletedStageIndex = getCompletedStageIndex(state.answers), triggeredByAnswer = false } = {}) => {
@@ -468,12 +588,15 @@ const syncStageJourney = ({ previousCompletedStageIndex = getCompletedStageIndex
 
 
 const applyAnswerChange = (updater) => {
+  const previousAnswers = { ...state.answers };
   const previousCompletedStageIndex = getCompletedStageIndex(state.answers);
   updater();
   saveProgress();
   renderQuestions();
   updateSummary();
   syncStageJourney({ previousCompletedStageIndex, triggeredByAnswer: true });
+  tryChapterOpeningToast(previousAnswers);
+  tryAnnounceMilestone();
 };
 
 const syncSelectPlaceholder = (select) => {
