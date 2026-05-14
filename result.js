@@ -593,15 +593,15 @@ const drawTcgStatPlate = (ctx, x, y, w, h, {
   });
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
-  ctx.font = '600 12px "Noto Sans SC", sans-serif';
+  ctx.font = '600 17px "Noto Sans SC", sans-serif';
   ctx.fillStyle = muted;
-  ctx.fillText(label, x + w / 2, y + 22);
-  ctx.font = '800 26px Outfit, "Noto Sans SC", sans-serif';
+  ctx.fillText(label, x + w / 2, y + 24);
+  ctx.font = '800 32px Outfit, "Noto Sans SC", sans-serif';
   ctx.fillStyle = primary;
-  ctx.fillText(String(value), x + w / 2, y + 54);
-  ctx.font = '600 11px "Noto Sans SC", sans-serif';
+  ctx.fillText(String(value), x + w / 2, y + 56);
+  ctx.font = '600 14px "Noto Sans SC", sans-serif';
   ctx.fillStyle = accent;
-  ctx.fillText(sub, x + w / 2, y + 74);
+  ctx.fillText(sub, x + w / 2, y + 82);
 };
 
 const drawOtomeBokeh = (ctx, x, y, w, h, seed, accent) => {
@@ -1238,7 +1238,7 @@ const generateShareImage = async (computed, options = {}) => {
   const bodyLineHeight = 35;
   const chipHeight = 42;
   const chipGap = 12;
-  const statHeight = 86;
+  const statHeight = 94;
   const panelGap = 18;
   const qrSize = 126;
   const footerBoxSize = qrSize + 20;
@@ -1273,8 +1273,8 @@ const generateShareImage = async (computed, options = {}) => {
   const easeRating = getEaseRating(selfProfile);
   const rarityRating = getRarityRating(selfProfile, themeVariant === 'match' ? 'need' : 'self');
   const rarityLabelCard = getRarityLabel(selfProfile);
-  const easePanelHeight = 78;
-  const rarityPanelHeight = 78;
+  const easePanelHeight = 90;
+  const rarityPanelHeight = 90;
 
 
   const canvas = document.createElement('canvas');
@@ -1488,7 +1488,7 @@ const generateShareImage = async (computed, options = {}) => {
   const typeLineFull = `${selfProfile.abbr || '—'}｜${rarityLabelCard} · 恋语角色`;
   const typeLines = getLines(ctx, typeLineFull, portraitWidth - 36);
   const tcgTypeHeight = typeLines.length * 22 + 10;
-  const tcgBattleHeight = 90;
+  const tcgBattleHeight = 100;
   const flavorPreview = (selfProfile.note || '').trim().slice(0, 80);
   ctx.font = `${bodyFontSize}px "Noto Sans SC", sans-serif`;
   const flavorLines = flavorPreview
@@ -1534,9 +1534,7 @@ const generateShareImage = async (computed, options = {}) => {
     16 +
     statHeight +
     18 +
-    easePanelHeight +
-    16 +
-    rarityPanelHeight +
+    Math.max(easePanelHeight, rarityPanelHeight) +
     16 +
     tagSectionHeight +
     panelGap +
@@ -1841,12 +1839,13 @@ const generateShareImage = async (computed, options = {}) => {
     });
 
     ctx.fillStyle = mutedText;
-    ctx.font = pixelFontSmall;
-    ctx.textAlign = 'left';
-    ctx.fillText(label, x + 18, statY + 24);
+    ctx.font = '600 17px "Noto Sans SC", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(label, x + statWidth / 2, statY + 26);
     ctx.fillStyle = primaryText;
-    ctx.font = '700 24px "Noto Sans SC", sans-serif';
-    ctx.fillText(value, x + 18, statY + 58);
+    ctx.font = '700 28px "Noto Sans SC", sans-serif';
+    ctx.fillText(value, x + statWidth / 2, statY + 64);
   });
 
   cursorY += statHeight + 18;
@@ -1865,17 +1864,17 @@ const generateShareImage = async (computed, options = {}) => {
     shadowOffsetY: 6,
   });
   ctx.fillStyle = mutedText;
-  ctx.font = pixelFontSmall;
-  ctx.textAlign = 'left';
+  ctx.font = '600 17px "Noto Sans SC", sans-serif';
+  ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
-  ctx.fillText('易陷程度', easePanelX + 18, cursorY + 24);
+  ctx.fillText('易捕捉程度', easePanelX + infoPanelWidth / 2, cursorY + 26);
 
-  const starOuter = 12.6;
-  const starInner = 6.3;
-  const starGap = 14.4;
+  const starOuter = 14.2;
+  const starInner = 7.1;
+  const starGap = 15;
   const starTotalWidth = 5 * starOuter * 2 + 4 * starGap;
   const starStartX = easePanelX + (infoPanelWidth - starTotalWidth) / 2 + starOuter;
-  const starY = cursorY + 52;
+  const starY = cursorY + 58;
   const activeStar = accent;
   const inactiveStar = 'rgba(140, 150, 165, 0.35)';
   for (let i = 0; i < 5; i += 1) {
@@ -1892,17 +1891,17 @@ const generateShareImage = async (computed, options = {}) => {
     shadowOffsetY: 6,
   });
   ctx.fillStyle = mutedText;
-  ctx.font = pixelFontSmall;
-  ctx.textAlign = 'left';
+  ctx.font = '600 17px "Noto Sans SC", sans-serif';
+  ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
-  ctx.fillText('恋语稀有度', rarityPanelX + 18, cursorY + 24);
+  ctx.fillText('角色稀有度', rarityPanelX + infoPanelWidth / 2, cursorY + 26);
 
-  const rarityStarOuter = 12.6;
-  const rarityStarInner = 6.3;
-  const rarityStarGap = 14.4;
+  const rarityStarOuter = 14.2;
+  const rarityStarInner = 7.1;
+  const rarityStarGap = 15;
   const rarityStarTotalWidth = 5 * rarityStarOuter * 2 + 4 * rarityStarGap;
   const rarityStarStartX = rarityPanelX + (infoPanelWidth - rarityStarTotalWidth) / 2 + rarityStarOuter;
-  const rarityStarY = cursorY + 52;
+  const rarityStarY = cursorY + 58;
   const rarityActiveStar = accent;
   const rarityInactiveStar = 'rgba(140, 150, 165, 0.35)';
   for (let i = 0; i < 5; i += 1) {
