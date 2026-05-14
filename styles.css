@@ -202,12 +202,14 @@ main {
   border-radius: 18px;
 }
 
-.page-result .brand-mark.brand-mark-avatar {
+.page-result .brand-mark.brand-mark-avatar,
+.page-quiz .brand-mark.brand-mark-avatar {
   overflow: hidden;
   border-radius: 12px;
 }
 
-.page-result .brand-mark-avatar-image {
+.page-result .brand-mark-avatar-image,
+.page-quiz .brand-mark-avatar-image {
   border-radius: 12px;
   image-rendering: auto;
 }
@@ -2772,12 +2774,14 @@ main {
     gap: 8px;
   }
 
-  .page-result .topbar {
+  .page-result .topbar,
+  .page-quiz .topbar {
     flex-wrap: nowrap;
     align-items: center;
   }
 
-  .page-result .topbar .topbar-actions {
+  .page-result .topbar .topbar-actions,
+  .page-quiz .topbar .topbar-actions {
     flex: 0 1 auto;
     width: auto;
     flex-wrap: nowrap;
@@ -2846,15 +2850,15 @@ main {
   }
 
   .page-home .topbar,
-  .page-profile .topbar,
-  .page-quiz .topbar {
+  .page-profile .topbar {
     flex-wrap: wrap;
     align-items: flex-start;
     row-gap: 8px;
     column-gap: 10px;
   }
 
-  .page-result .topbar {
+  .page-result .topbar,
+  .page-quiz .topbar {
     flex-wrap: nowrap;
     align-items: center;
     column-gap: 10px;
@@ -2877,8 +2881,7 @@ main {
   }
 
   .page-home .topbar .topbar-actions,
-  .page-profile .topbar .topbar-actions,
-  .page-quiz .topbar .topbar-actions {
+  .page-profile .topbar .topbar-actions {
     order: 2;
     width: 100%;
     flex: 1 1 100%;
@@ -2889,7 +2892,8 @@ main {
     gap: 6px 8px;
   }
 
-  .page-result .topbar .topbar-actions {
+  .page-result .topbar .topbar-actions,
+  .page-quiz .topbar .topbar-actions {
     order: 2;
     width: auto;
     flex: 0 1 auto;
