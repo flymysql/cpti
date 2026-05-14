@@ -753,26 +753,26 @@ const drawDiamondFrame = (ctx, cx, cy, size, options = {}) => {
   }
 };
 
-const drawTwelvePointStarPath = (ctx, cx, cy, outerRadius, innerRadius) => {
-  const spikes = 12;
-  let rot = -Math.PI / 2;
-  const step = Math.PI / spikes;
+/** Regular 12-gon (dodecagon), flat sides — not a star. */
+const drawRegularPolygonPath = (ctx, cx, cy, radius, sides = 12) => {
   ctx.beginPath();
-  for (let i = 0; i < spikes * 2; i += 1) {
-    const r = i % 2 === 0 ? outerRadius : innerRadius;
-    ctx.lineTo(cx + Math.cos(rot) * r, cy + Math.sin(rot) * r);
-    rot += step;
+  for (let i = 0; i < sides; i += 1) {
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / sides;
+    const x = cx + Math.cos(a) * radius;
+    const y = cy + Math.sin(a) * radius;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
   }
   ctx.closePath();
 };
 
-const drawTwelvePointStarSparkle = (ctx, cx, cy, outerRadius, accent, compact) => {
-  const step = Math.PI / 12;
+const drawDodecagonVertexSparkle = (ctx, cx, cy, radius, accent, compact) => {
+  const sides = 12;
   const rGlow = compact ? 7 : 10;
-  for (let k = 0; k < 12; k += 1) {
-    const a = -Math.PI / 2 + k * 2 * step;
-    const sx = cx + Math.cos(a) * (outerRadius + 2);
-    const sy = cy + Math.sin(a) * (outerRadius + 2);
+  for (let k = 0; k < sides; k += 1) {
+    const a = -Math.PI / 2 + (k * 2 * Math.PI) / sides;
+    const sx = cx + Math.cos(a) * (radius + 2);
+    const sy = cy + Math.sin(a) * (radius + 2);
     ctx.save();
     ctx.globalAlpha = 0.48;
     const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, rGlow);
@@ -1338,56 +1338,51 @@ const generateShareImage = async (computed, options = {}) => {
     const centerX = frameX + frameSize / 2;
 
     const centerY = frameY + frameSize / 2;
-    const starScale = isComparePortrait ? 0.9 : 1;
-    const starOuterR = frameSize * 0.46 * starScale;
-    const starInnerR = starOuterR * 0.44;
+    const polyScale = isComparePortrait ? 0.9 : 1;
+    const polyOuterR = frameSize * 0.46 * polyScale;
 
     ctx.save();
     ctx.globalAlpha = 0.55;
-    drawTwelvePointStarPath(ctx, centerX, centerY, starOuterR + 18, (starOuterR + 18) * 0.44);
+    drawRegularPolygonPath(ctx, centerX, centerY, polyOuterR + 18);
     ctx.fillStyle = 'rgba(255, 255, 255, 0.72)';
     ctx.fill();
     ctx.restore();
 
-    const starRings = [
+    const polyRings = [
       {
-        o: starOuterR + 14,
-        i: (starOuterR + 14) * 0.44,
+        r: polyOuterR + 14,
         stroke: '#aef5ff',
         lw: isComparePortrait ? 6 : 8,
         glow: 'rgba(160, 245, 255, 0.95)',
         blur: isComparePortrait ? 18 : 24,
       },
       {
-        o: starOuterR + 8,
-        i: (starOuterR + 8) * 0.44,
+        r: polyOuterR + 8,
         stroke: '#ffe6a8',
         lw: isComparePortrait ? 5 : 7,
         glow: 'rgba(255, 230, 168, 0.9)',
         blur: isComparePortrait ? 16 : 20,
       },
       {
-        o: starOuterR + 3,
-        i: (starOuterR + 3) * 0.44,
+        r: polyOuterR + 3,
         stroke: '#e6c2ff',
         lw: isComparePortrait ? 5 : 6,
         glow: 'rgba(230, 194, 255, 0.82)',
         blur: isComparePortrait ? 14 : 18,
       },
       {
-        o: starOuterR,
-        i: starInnerR,
+        r: polyOuterR,
         stroke: accent,
         lw: isComparePortrait ? 5 : 6,
         glow: cardTheme.accentGlow,
         blur: isComparePortrait ? 16 : 22,
       },
     ];
-    starRings.forEach((ring) => {
+    polyRings.forEach((ring) => {
       ctx.save();
       ctx.shadowColor = ring.glow;
       ctx.shadowBlur = ring.blur;
-      drawTwelvePointStarPath(ctx, centerX, centerY, ring.o, ring.i);
+      drawRegularPolygonPath(ctx, centerX, centerY, ring.r);
       ctx.strokeStyle = ring.stroke;
       ctx.lineWidth = ring.lw;
       ctx.lineJoin = 'round';
@@ -1395,34 +1390,33 @@ const generateShareImage = async (computed, options = {}) => {
       ctx.restore();
     });
 
-    const clipOuter = starOuterR - 4;
-    const clipInner = clipOuter * 0.44;
+    const clipRadius = polyOuterR - 4;
     const avatarZoom = isComparePortrait ? 1.08 : 1.2;
-    const drawSize = clipOuter * 2 * avatarZoom * 0.9;
+    const drawSize = clipRadius * 2 * avatarZoom * 0.9;
     const drawX = centerX - drawSize / 2;
     const drawY = centerY - drawSize / 2 - (isComparePortrait ? 4 : 8);
     try {
       const avatar = await loadImage(profile.avatarImage);
       ctx.save();
-      drawTwelvePointStarPath(ctx, centerX, centerY, clipOuter, clipInner);
+      drawRegularPolygonPath(ctx, centerX, centerY, clipRadius);
       ctx.clip();
-      const faceGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, clipOuter * 1.15);
+      const faceGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, clipRadius * 1.15);
       faceGrad.addColorStop(0, 'rgba(255, 252, 255, 0.98)');
       faceGrad.addColorStop(1, 'rgba(255, 236, 246, 0.96)');
       ctx.fillStyle = faceGrad;
-      drawTwelvePointStarPath(ctx, centerX, centerY, clipOuter, clipInner);
+      drawRegularPolygonPath(ctx, centerX, centerY, clipRadius);
       ctx.fill();
       ctx.drawImage(avatar, drawX, drawY, drawSize, drawSize);
       ctx.restore();
 
       ctx.save();
-      drawTwelvePointStarPath(ctx, centerX, centerY, clipOuter + 1.2, clipInner + 0.55);
+      drawRegularPolygonPath(ctx, centerX, centerY, clipRadius + 1.2);
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
       ctx.lineWidth = isComparePortrait ? 1.5 : 2;
       ctx.stroke();
       ctx.restore();
 
-      drawTwelvePointStarSparkle(ctx, centerX, centerY, starOuterR, accent, isComparePortrait);
+      drawDodecagonVertexSparkle(ctx, centerX, centerY, polyOuterR, accent, isComparePortrait);
     } catch (error) {
       // ignore avatar draw failures
     }
