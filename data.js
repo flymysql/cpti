@@ -9478,6 +9478,29 @@ const getQuestionWeight = (question, mode = 'self') => {
       ? Math.min(99, Math.max(50, Math.round(needConfidence)))
       : 63;
     const genderNorm = gender === 'male' || gender === 'female' || gender === 'nonbinary' ? gender : '';
+    const selfRarity = getProfileRarityLabel(selfId);
+    const needRarity = getProfileRarityLabel(needId);
+    if (fromLinkSnapshot) {
+      const headingIntro = `你的朋友 Ta 测出来，Ta 属于稀有度${selfRarity}的「${selfProfile.name}」型恋爱人格；和 Ta 最匹配的是稀有度${needRarity}的「${needProfile.name}」型恋爱人格。`;
+      return {
+        zodiac: '',
+        mbti: '',
+        gender: genderNorm,
+        answeredCount: 0,
+        totalQuestions: questions.length,
+        selfProfile,
+        needProfile,
+        selfConfidence: sc,
+        needConfidence: nc,
+        formulaTitle: `${selfProfile.name} × ${needProfile.name}`,
+        linkSnapshotHeadingIntro: headingIntro,
+        formulaSummary: `这是 Ta 分享的 CPTI 快照：Ta 更像「${selfProfile.name}」，也最容易和「${needProfile.name}」这种类型产生化学反应。`,
+        resultTags: [...selfProfile.tags.slice(0, 2), ...needProfile.tags.slice(0, 2)],
+        note: '这是友人的结果预览。想知道你在关系里更像谁？点右下角「测测我的」去答题生成你的配方。',
+        shareCopy: `我在 CPTI 测出来是「${selfProfile.name}」，最和我匹配的类型是「${needProfile.name}」。${selfProfile.note} ${taifyCopy(needProfile.needNote || needProfile.note)}`,
+        fromLinkSnapshot,
+      };
+    }
     return {
       zodiac: '',
       mbti: '',
