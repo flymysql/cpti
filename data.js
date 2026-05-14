@@ -9496,7 +9496,7 @@ const getQuestionWeight = (question, mode = 'self') => {
         linkSnapshotHeadingIntro: headingIntro,
         formulaSummary: `这是 Ta 分享的 CPTI 快照：Ta 更像「${selfProfile.name}」，也最容易和「${needProfile.name}」这种类型产生化学反应。`,
         resultTags: [...selfProfile.tags.slice(0, 2), ...needProfile.tags.slice(0, 2)],
-        note: '这是友人的结果预览。想知道你在关系里更像谁？点右下角「测测我的」去答题生成你的配方。',
+        note: '这是友人的结果预览。想知道自己在关系里更像谁，可以去测试页完成同一套题目并生成你的配方。',
         shareCopy: `我在 CPTI 测出来是「${selfProfile.name}」，最和我匹配的类型是「${needProfile.name}」。${selfProfile.note} ${taifyCopy(needProfile.needNote || needProfile.note)}`,
         fromLinkSnapshot,
       };
