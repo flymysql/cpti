@@ -2994,10 +2994,6 @@ main {
     align-items: center;
   }
 
-  .catalog-card-top {
-    align-items: flex-start;
-  }
-
 
   .page-result .catalog-grid {
     gap: 12px;
