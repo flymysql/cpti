@@ -32,6 +32,8 @@ node scripts/generate-avatars-ark.mjs --dry-run
 
 应列出约 **47** 条任务（5 个单套 + 21×2 套）。
 
+若显示 **Parsed 0 generation job(s)**，多半是 Markdown 使用了 **Windows CRLF 换行**：旧版脚本按 `\n## ` 切分会失败。当前脚本会在解析前把 `\r\n` 规范成 `\n`；若仍为 0，请确认 `--md` 指向的是本仓库的 `docs/avatar-prompts-pixel-full.md`，且二级标题形如 `## badboy — …`。
+
 ## 4. 正式生成（会扣费）
 
 ```bash

@@ -59,7 +59,13 @@ Env:
  */
 export function parseAvatarMarkdown(md) {
   const jobs = [];
-  const parts = md.split(/\n## /).slice(1);
+  // CRLF (\r\n) breaks split(/\n## /) and ```\n fences; normalize before parsing.
+  const text = String(md || '')
+    .replace(/^\uFEFF/, '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n');
+
+  const parts = text.split(/\n## /).slice(1);
 
   for (const part of parts) {
     const nl = part.indexOf('\n');
@@ -71,7 +77,9 @@ export function parseAvatarMarkdown(md) {
     if (!idMatch) continue;
     const slug = idMatch[1];
 
-    const subBlocks = [...body.matchAll(/\n###\s*(男性向|女性向)\s*\n\n```\n([\s\S]*?)```/g)];
+    const subBlocks = [
+      ...body.matchAll(/\n###\s*(男性向|女性向)\s*\n+\s*```\s*\n([\s\S]*?)```/g),
+    ];
     if (subBlocks.length) {
       for (const m of subBlocks) {
         const variant = m[1] === '男性向' ? 'male' : 'female';
@@ -80,7 +88,7 @@ export function parseAvatarMarkdown(md) {
       continue;
     }
 
-    const one = body.match(/```\n([\s\S]*?)```/);
+    const one = body.match(/```\s*\n([\s\S]*?)```/);
     if (one) {
       jobs.push({ slug, variant: 'default', prompt: one[1].trim() });
     }
@@ -189,7 +197,13 @@ async function main() {
   }
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+const isCli =
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
+
+if (isCli) {
+  main().catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+}
