@@ -1,0 +1,10 @@
+{
+  "name": "cpti",
+  "private": true,
+  "scripts": {
+    "build:avatar-thumbs": "node scripts/build-avatar-thumbs.mjs"
+  },
+  "devDependencies": {
+    "sharp": "^0.33.5"
+  }
+}

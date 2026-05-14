@@ -21,8 +21,7 @@ Header：`Authorization: Bearer <ARK_API_KEY>`
 ## 2. 安装要求
 
 - **Node.js 18+**（内置 `fetch`）
-
-无需安装 npm 依赖。
+- 站点脚本 **`generate-avatars-ark.mjs`** 不依赖 npm；若需要生成缩略图，在仓库根目录执行 **`npm install`**（会安装 `sharp` 开发依赖，见根目录 `package.json`）。
 
 ## 3. 试运行（只解析 Markdown，不调 API）
 
@@ -33,6 +32,8 @@ node scripts/generate-avatars-ark.mjs --dry-run
 应列出约 **47** 条任务（5 个单套 + 21×2 套）。
 
 若显示 **Parsed 0 generation job(s)**，请确认 `--md` 指向本仓库的 `docs/avatar-prompts-pixel-full.md`，且二级标题形如 `## badboy — …`。脚本会在解析前把 **CRLF（`\r\n`）** 规范为 `\n`，避免 Windows 下切分失败。
+
+生成全尺寸 PNG 后，可在仓库根目录执行 **`npm install`** 与 **`npm run build:avatar-thumbs`**，在 `generated-avatars/thumbs/` 生成约 160px 的列表用缩略图（首页头像墙与卡片使用缩略图路径）。
 
 ## 4. 正式生成（会扣费）
 
@@ -46,7 +47,7 @@ export ARK_API_KEY='你的密钥'
 node scripts/generate-avatars-ark.mjs
 ```
 
-- 默认输出目录：**`generated-avatars/`**（已加入 `.gitignore` 建议自行忽略大文件；若未忽略可自行添加）。  
+- 默认输出目录：**`generated-avatars/`**（全尺寸 PNG 可提交到仓库；根目录 `.gitignore` 仅忽略 **`node_modules/`**）。  
 - 文件名：`badboy.png`、`boundary-male.png`、`boundary-female.png` 等。  
 - 默认每条请求间隔 **2.5s**，可用 `--delay-ms` 调整。  
 - 先小规模试跑：`node scripts/generate-avatars-ark.mjs --limit 2`
