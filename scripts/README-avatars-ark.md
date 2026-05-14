@@ -7,7 +7,7 @@
 
 1. 登录 [火山引擎](https://www.volcengine.com/)，开通 **方舟** 与 **图片生成（Seedream）** 等所需产品（以控制台说明为准）。  
 2. 在方舟控制台创建 **API Key**，形如 `sk-...`。  
-3. 确认你要用的 **模型 ID**（例如 `doubao-seedream-4-0-250828`，以官方文档为准）。
+3. 确认你要用的 **模型 ID**（例如 `doubao-seedream-5-0-260128`，以官方文档为准）。**Seedream 5** 对 `size` 有下限（约 **1920×1920**，总像素 ≥ 3,686,400）；若接口报 `size` 无效，请把 `ARK_IMAGE_SIZE` 设为 `1920x1920` 或更大。
 
 官方文档入口（若链接变更请以控制台为准）：
 
@@ -32,13 +32,15 @@ node scripts/generate-avatars-ark.mjs --dry-run
 
 应列出约 **47** 条任务（5 个单套 + 21×2 套）。
 
+若显示 **Parsed 0 generation job(s)**，请确认 `--md` 指向本仓库的 `docs/avatar-prompts-pixel-full.md`，且二级标题形如 `## badboy — …`。脚本会在解析前把 **CRLF（`\r\n`）** 规范为 `\n`，避免 Windows 下切分失败。
+
 ## 4. 正式生成（会扣费）
 
 ```bash
 export ARK_API_KEY='你的密钥'
 # 可选：
-# export ARK_IMAGE_MODEL='doubao-seedream-4-0-250828'
-# export ARK_IMAGE_SIZE='1024x1024'
+# export ARK_IMAGE_MODEL='doubao-seedream-5-0-260128'
+# export ARK_IMAGE_SIZE='1920x1920'
 # export ARK_API_BASE='https://ark.cn-beijing.volces.com/api/v3'
 
 node scripts/generate-avatars-ark.mjs
