@@ -104,6 +104,35 @@ const MILESTONE_TOASTS = {
 
 const milestoneAnnounced = new Set();
 
+const QUIZ_TOAST_MIN_ANSWER_GAP = 4;
+let lastQuizToastAtAnswered = -Infinity;
+const pendingStageTransitionIndices = [];
+
+const getAnsweredCountForToasts = () => countAnswered(state.answers);
+
+const canShowQuizToastNow = () => getAnsweredCountForToasts() - lastQuizToastAtAnswered >= QUIZ_TOAST_MIN_ANSWER_GAP;
+
+const markQuizToastShown = () => {
+  lastQuizToastAtAnswered = getAnsweredCountForToasts();
+};
+
+const enqueueStageTransition = (completedStageIndex) => {
+  const queue = pendingStageTransitionIndices;
+  if (queue.length && queue[queue.length - 1] === completedStageIndex) return;
+  queue.push(completedStageIndex);
+};
+
+const tryFlushQuizToasts = () => {
+  if (pendingStageTransitionIndices.length) {
+    if (!canShowQuizToastNow()) return;
+    const idx = pendingStageTransitionIndices.shift();
+    markQuizToastShown();
+    showStageTransition(idx);
+    return;
+  }
+  tryAnnounceMilestoneNow();
+};
+
 const restoreMilestoneFlags = (answers = {}) => {
   const answered = countAnswered(answers);
   const total = questions.length;
@@ -214,6 +243,8 @@ const clearAll = () => {
   localStorage.removeItem(STORAGE.progressKey);
   localStorage.removeItem(STORAGE.resultKey);
   milestoneAnnounced.clear();
+  pendingStageTransitionIndices.length = 0;
+  lastQuizToastAtAnswered = -Infinity;
 };
 
 const optionHtml = (questionId, option, index, isSelected) => `
@@ -527,26 +558,22 @@ const showStageTransition = (completedStageIndex) => {
   });
 };
 
-const tryAnnounceMilestone = () => {
+const tryAnnounceMilestoneNow = () => {
   const answered = countAnswered(state.answers);
   const total = questions.length;
   if (!total || answered === 0) return;
+  if (!canShowQuizToastNow()) return;
   const ratio = answered / total;
-  [25, 50, 75].forEach((pct) => {
-    if (ratio < pct / 100) return;
-    if (milestoneAnnounced.has(pct)) return;
-    window.setTimeout(() => {
-      if (milestoneAnnounced.has(pct)) return;
-      if (stageToast?.classList.contains('is-visible')) return;
-      const payload = MILESTONE_TOASTS[pct];
-      if (!payload) return;
-      milestoneAnnounced.add(pct);
-      showStageToastMessage({
-        ...payload,
-        duration: 3800,
-        micro: true,
-      });
-    }, 520);
+  const pct = [25, 50, 75].find((p) => ratio >= p / 100 && !milestoneAnnounced.has(p));
+  if (pct == null) return;
+  const payload = MILESTONE_TOASTS[pct];
+  if (!payload) return;
+  milestoneAnnounced.add(pct);
+  markQuizToastShown();
+  showStageToastMessage({
+    ...payload,
+    duration: 3800,
+    micro: true,
   });
 };
 
@@ -554,7 +581,7 @@ const syncStageJourney = ({ previousCompletedStageIndex = getCompletedStageIndex
   const nextCompletedStageIndex = getCompletedStageIndex(state.answers);
   renderStageJourney();
   if (triggeredByAnswer && nextCompletedStageIndex > previousCompletedStageIndex) {
-    showStageTransition(nextCompletedStageIndex);
+    enqueueStageTransition(nextCompletedStageIndex);
   }
 };
 
@@ -566,7 +593,7 @@ const applyAnswerChange = (updater) => {
   renderQuestions();
   updateSummary();
   syncStageJourney({ previousCompletedStageIndex, triggeredByAnswer: true });
-  tryAnnounceMilestone();
+  tryFlushQuizToasts();
 };
 
 const syncSelectPlaceholder = (select) => {
