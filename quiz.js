@@ -6,6 +6,7 @@ const {
   genderLabels,
   countAnswered,
   calculateResults,
+  buildResultQueryString,
   profiles,
 } = window.CPTI_DATA;
 
@@ -646,7 +647,8 @@ submitButton.addEventListener('click', () => {
 
   localStorage.setItem(STORAGE.resultKey, JSON.stringify(payload));
   localStorage.setItem(STORAGE.progressKey, JSON.stringify({ answers: state.answers, zodiac: state.zodiac, gender: state.gender }));
-  window.location.href = './result.html';
+  const qs = buildResultQueryString(result);
+  window.location.href = qs ? `./result.html?${qs}` : './result.html';
 });
 
 populateZodiac();
