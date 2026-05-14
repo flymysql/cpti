@@ -2776,6 +2776,7 @@ main {
     gap: 8px;
   }
 
+  .page-home .topbar,
   .page-result .topbar,
   .page-quiz .topbar,
   .page-profile .topbar {
@@ -2783,6 +2784,7 @@ main {
     align-items: center;
   }
 
+  .page-home .topbar .topbar-actions,
   .page-result .topbar .topbar-actions,
   .page-quiz .topbar .topbar-actions,
   .page-profile .topbar .topbar-actions {
@@ -2853,13 +2855,7 @@ main {
     justify-content: center;
   }
 
-  .page-home .topbar {
-    flex-wrap: wrap;
-    align-items: flex-start;
-    row-gap: 8px;
-    column-gap: 10px;
-  }
-
+  .page-home .topbar,
   .page-result .topbar,
   .page-quiz .topbar,
   .page-profile .topbar {
@@ -2884,17 +2880,7 @@ main {
     display: none;
   }
 
-  .page-home .topbar .topbar-actions {
-    order: 2;
-    width: 100%;
-    flex: 1 1 100%;
-    min-width: 0;
-    margin-left: 0;
-    justify-content: flex-start;
-    flex-wrap: wrap;
-    gap: 6px 8px;
-  }
-
+  .page-home .topbar .topbar-actions,
   .page-result .topbar .topbar-actions,
   .page-quiz .topbar .topbar-actions,
   .page-profile .topbar .topbar-actions {
@@ -2917,10 +2903,7 @@ main {
     flex: 0 0 auto;
   }
 
-  .page-home .topbar .topbar-actions .ghost-button {
-    margin-left: 0;
-  }
-
+  .page-home .topbar .topbar-actions .ghost-button,
   .page-quiz .topbar .topbar-actions .ghost-button,
   .page-result .topbar .topbar-actions .ghost-button,
   .page-profile .topbar .topbar-actions .ghost-button {
