@@ -214,10 +214,6 @@ const applyProfileChrome = () => {
   if (brandSmall) brandSmall.textContent = L('common.brandSmall');
   document.querySelectorAll('.topbar-actions .ghost-button, .topbar-actions .topbar-link').forEach((el) => {
     const href = el.getAttribute('href') || '';
-    if (href.includes('index.html')) {
-      el.textContent = L('common.home');
-      el.setAttribute('href', I18N.withLang('./index.html'));
-    }
     if (href.includes('quiz.html')) {
       el.textContent = L('common.quiz');
       el.setAttribute('href', I18N.withLang('./quiz.html'));

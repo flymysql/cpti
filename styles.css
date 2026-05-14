@@ -203,13 +203,15 @@ main {
 }
 
 .page-result .brand-mark.brand-mark-avatar,
-.page-quiz .brand-mark.brand-mark-avatar {
+.page-quiz .brand-mark.brand-mark-avatar,
+.page-profile .brand-mark.brand-mark-avatar {
   overflow: hidden;
   border-radius: 12px;
 }
 
 .page-result .brand-mark-avatar-image,
-.page-quiz .brand-mark-avatar-image {
+.page-quiz .brand-mark-avatar-image,
+.page-profile .brand-mark-avatar-image {
   border-radius: 12px;
   image-rendering: auto;
 }
@@ -2775,13 +2777,15 @@ main {
   }
 
   .page-result .topbar,
-  .page-quiz .topbar {
+  .page-quiz .topbar,
+  .page-profile .topbar {
     flex-wrap: nowrap;
     align-items: center;
   }
 
   .page-result .topbar .topbar-actions,
-  .page-quiz .topbar .topbar-actions {
+  .page-quiz .topbar .topbar-actions,
+  .page-profile .topbar .topbar-actions {
     flex: 0 1 auto;
     width: auto;
     flex-wrap: nowrap;
@@ -2849,8 +2853,7 @@ main {
     justify-content: center;
   }
 
-  .page-home .topbar,
-  .page-profile .topbar {
+  .page-home .topbar {
     flex-wrap: wrap;
     align-items: flex-start;
     row-gap: 8px;
@@ -2858,7 +2861,8 @@ main {
   }
 
   .page-result .topbar,
-  .page-quiz .topbar {
+  .page-quiz .topbar,
+  .page-profile .topbar {
     flex-wrap: nowrap;
     align-items: center;
     column-gap: 10px;
@@ -2880,8 +2884,7 @@ main {
     display: none;
   }
 
-  .page-home .topbar .topbar-actions,
-  .page-profile .topbar .topbar-actions {
+  .page-home .topbar .topbar-actions {
     order: 2;
     width: 100%;
     flex: 1 1 100%;
@@ -2893,7 +2896,8 @@ main {
   }
 
   .page-result .topbar .topbar-actions,
-  .page-quiz .topbar .topbar-actions {
+  .page-quiz .topbar .topbar-actions,
+  .page-profile .topbar .topbar-actions {
     order: 2;
     width: auto;
     flex: 0 1 auto;
@@ -2913,18 +2917,17 @@ main {
     flex: 0 0 auto;
   }
 
-  .page-home .topbar .topbar-actions .ghost-button,
-  .page-profile .topbar .topbar-actions .ghost-button {
+  .page-home .topbar .topbar-actions .ghost-button {
     margin-left: 0;
   }
 
   .page-quiz .topbar .topbar-actions .ghost-button,
-  .page-result .topbar .topbar-actions .ghost-button {
+  .page-result .topbar .topbar-actions .ghost-button,
+  .page-profile .topbar .topbar-actions .ghost-button {
     margin-left: 0;
   }
 
-  .page-home .topbar .topbar-link,
-  .page-profile .topbar .topbar-link {
+  .page-home .topbar .topbar-link {
     min-height: 38px;
     padding: 8px 12px;
     font-size: 0.88rem;
@@ -2932,7 +2935,8 @@ main {
   }
 
   .page-quiz .topbar .topbar-link,
-  .page-result .topbar .topbar-link {
+  .page-result .topbar .topbar-link,
+  .page-profile .topbar .topbar-link {
     min-height: 36px;
     padding: 7px 10px;
     font-size: 0.82rem;
