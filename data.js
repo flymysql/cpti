@@ -19,8 +19,9 @@
     nonbinary: '非二元 / 其他',
   };
 
-  /** Archetypes with a single gendered asset (matches generated-avatars/*.png naming). */
+  /** Archetypes with a single gendered asset (matches generated-avatars/*.{ext} naming). */
   const RASTER_AVATAR_EXPLICIT_IDS = new Set(['badboy', 'badgirl', 'daddy', 'manmom', 'mom']);
+  const RASTER_AVATAR_EXT = 'webp';
 
   const joinUrl = (base, file) => {
     try {
@@ -64,13 +65,13 @@
   );
 
   const rasterAvatarFileName = (profileId, userGender = '') => {
-    if (RASTER_AVATAR_EXPLICIT_IDS.has(profileId)) return `${profileId}.png`;
+    if (RASTER_AVATAR_EXPLICIT_IDS.has(profileId)) return `${profileId}.${RASTER_AVATAR_EXT}`;
     const suf = rasterVariantSuffixForProfile(profileId, userGender);
-    return `${profileId}-${suf}.png`;
+    return `${profileId}-${suf}.${RASTER_AVATAR_EXT}`;
   };
 
   /**
-   * Full-size raster (1920) for share canvas & profile hero.
+   * Full-size raster (WebP, ≤1024px after optimize) for share canvas & profile hero.
    * @param {string} profileId
    * @param {string} userGender When male/female/nonbinary, picks that line; otherwise stable pseudo-random male|female per profileId (same as list thumbs).
    */
@@ -88,13 +89,13 @@
     const base = getRasterAvatarFolderHref('thumbs/');
     let file;
     if (RASTER_AVATAR_EXPLICIT_IDS.has(profileId)) {
-      file = `${profileId}.png`;
+      file = `${profileId}.${RASTER_AVATAR_EXT}`;
     } else {
       const hasLine = hasRasterUserGenderLine(userGender);
       const suf = quizCompleted && hasLine
         ? pickNeutralVariantSuffix(userGender)
         : listPreviewVariantSuffix(profileId);
-      file = `${profileId}-${suf}.png`;
+      file = `${profileId}-${suf}.${RASTER_AVATAR_EXT}`;
     }
     return joinUrl(base, file);
   };
