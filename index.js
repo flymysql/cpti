@@ -4,6 +4,7 @@ const {
   STORAGE,
   getProfileRarityLabel,
   resolveRasterAvatarThumbUrl,
+  resolveRasterAvatarUrl,
   getSavedQuizGender,
 } = window.CPTI_DATA;
 const I18N = window.CPTI_I18N;
@@ -29,11 +30,21 @@ const samplePair = {
 
 const avatarHtml = (profile, size = 'small', listOptions = {}) => {
   const lp = I18N.localizeProfile(profile);
-  const { quizCompleted = false, userGender = '' } = listOptions;
-  const src = resolveRasterAvatarThumbUrl(profile.id, { quizCompleted, userGender });
+  const {
+    quizCompleted = false,
+    userGender = '',
+    hydrateCatalogFull = false,
+  } = listOptions;
+  const thumbSrc = resolveRasterAvatarThumbUrl(profile.id, { quizCompleted, userGender });
+  const fullSrc = hydrateCatalogFull
+    ? resolveRasterAvatarUrl(profile.id, userGender)
+    : '';
+  const fullAttr = fullSrc
+    ? ` class="home-catalog-avatar-img" data-full-src="${String(fullSrc).replace(/&/g, '&amp;').replace(/"/g, '&quot;')}"`
+    : '';
   return `
   <div class='avatar-shell ${size}' style='--avatar-accent:${profile.accent}; --avatar-soft:${profile.soft};'>
-    <img src="${src}" alt="${lp.name}" loading="lazy" />
+    <img src="${thumbSrc}" alt="${lp.name}" loading="lazy" decoding="async"${fullAttr} />
   </div>
 `;
 };
@@ -174,7 +185,8 @@ const renderHome = () => {
 
 
 
-    homeCatalog.innerHTML = previewProfiles.map((profile) => fullCardHtml(profile, listOptions)).join('') + lockedCards;
+    const catalogListOptions = { ...listOptions, hydrateCatalogFull: true };
+    homeCatalog.innerHTML = previewProfiles.map((profile) => fullCardHtml(profile, catalogListOptions)).join('') + lockedCards;
   }
 
   if (topbarAvatarWall) {
@@ -191,6 +203,46 @@ const renderHome = () => {
     homeCatalogTitle.textContent = typeof L('index.catalogTitleTpl') === 'function'
       ? L('index.catalogTitleTpl')(nP)
       : `先认识这${nP}种恋爱人格`;
+  }
+
+  scheduleHomeCatalogAvatarHydrate();
+};
+
+
+/** After window load + idle, swap catalog thumbs for full-size URLs (HTTP cache helps profile/result later). */
+const scheduleHomeCatalogAvatarHydrate = () => {
+  if (!homeCatalog) return;
+
+  const hydrate = () => {
+    homeCatalog.querySelectorAll('img.home-catalog-avatar-img[data-full-src]').forEach((img) => {
+      if (!(img instanceof HTMLImageElement) || img.dataset.avatarHydrated === '1') return;
+      const full = img.getAttribute('data-full-src');
+      if (!full) return;
+      const loader = new Image();
+      loader.onload = () => {
+        img.src = full;
+        img.dataset.avatarHydrated = '1';
+        img.removeAttribute('data-full-src');
+      };
+      loader.onerror = () => {
+        img.dataset.avatarHydrated = 'error';
+      };
+      loader.src = full;
+    });
+  };
+
+  const kick = () => {
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(() => hydrate(), { timeout: 2800 });
+    } else {
+      window.setTimeout(hydrate, 400);
+    }
+  };
+
+  if (document.readyState === 'complete') {
+    kick();
+  } else {
+    window.addEventListener('load', kick, { once: true });
   }
 };
 
