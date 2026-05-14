@@ -1275,6 +1275,7 @@ const generateShareImage = async (computed, options = {}) => {
 
 
   const selectedGender = normalizeGender(computed.gender);
+  const matchShareRasterGender = selectedGender === 'male' ? 'female' : 'male';
   const cardTheme = getShareCardTheme(selectedGender, themeVariant);
   const accent = cardTheme.accent;
   const primaryText = cardTheme.primaryText;
@@ -1717,7 +1718,7 @@ const generateShareImage = async (computed, options = {}) => {
       title: Sk('portraitMatch'),
       name: I18N.localizeProfile(compareProfiles.right).name,
       mode: 'need',
-      avatarSrc: resolveRasterAvatarUrl(compareProfiles.right.id, selectedGender),
+      avatarSrc: resolveRasterAvatarUrl(compareProfiles.right.id, matchShareRasterGender),
     });
 
 
