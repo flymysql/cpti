@@ -2735,6 +2735,34 @@ main {
   }
 }
 
+@media (max-width: 960px) {
+  .topbar {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: 8px;
+    column-gap: 10px;
+  }
+
+  .topbar .brand {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .topbar .brand-copy small {
+    display: none;
+  }
+
+  .topbar .topbar-actions {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
 @media (max-width: 720px) {
   .stage-floating-progress {
     top: 10px;
@@ -2796,19 +2824,17 @@ main {
   }
 
   .page-home .topbar,
-  .page-profile .topbar {
-    flex-wrap: nowrap;
-    align-items: center;
-  }
-
+  .page-profile .topbar,
   .page-quiz .topbar,
   .page-result .topbar {
     flex-wrap: wrap;
-    align-items: center;
+    align-items: flex-start;
     row-gap: 8px;
     column-gap: 10px;
   }
 
+  .page-home .topbar .brand,
+  .page-profile .topbar .brand,
   .page-quiz .topbar .brand,
   .page-result .topbar .brand {
     flex: 1 1 auto;
@@ -2816,28 +2842,15 @@ main {
     max-width: 100%;
   }
 
+  .page-home .brand-copy small,
+  .page-profile .brand-copy small,
   .page-quiz .brand-copy small,
   .page-result .brand-copy small {
     display: none;
   }
 
-  .page-home .topbar .brand,
-  .page-profile .topbar .brand {
-    width: auto;
-    flex: 0 0 auto;
-  }
-
   .page-home .topbar .topbar-actions,
-  .page-profile .topbar .topbar-actions {
-    order: 2;
-    width: auto;
-    min-width: 0;
-    flex: 1 1 auto;
-    justify-content: flex-end;
-    flex-wrap: nowrap;
-    gap: 8px;
-  }
-
+  .page-profile .topbar .topbar-actions,
   .page-quiz .topbar .topbar-actions,
   .page-result .topbar .topbar-actions {
     order: 2;
@@ -2851,13 +2864,7 @@ main {
   }
 
   .page-home .topbar .ghost-button,
-  .page-profile .topbar .ghost-button {
-    order: 2;
-    width: auto;
-    margin-left: auto;
-    flex: 0 0 auto;
-  }
-
+  .page-profile .topbar .ghost-button,
   .page-quiz .topbar .ghost-button,
   .page-result .topbar .ghost-button {
     order: 0;
@@ -2892,11 +2899,15 @@ main {
     white-space: nowrap;
   }
 
+  .page-home .lang-switch,
+  .page-profile .lang-switch,
   .page-quiz .lang-switch,
   .page-result .lang-switch {
     flex-shrink: 0;
   }
 
+  .page-home .lang-switch-btn,
+  .page-profile .lang-switch-btn,
   .page-quiz .lang-switch-btn,
   .page-result .lang-switch-btn {
     min-height: 30px;

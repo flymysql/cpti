@@ -38,13 +38,26 @@
   let activeLocale = getLocale();
 
   const setLocale = (next, { reload = true } = {}) => {
-    activeLocale = normalizeLocale(next);
+    const normalized = normalizeLocale(next);
+    activeLocale = normalized;
     try {
       localStorage.setItem(STORAGE_KEY, activeLocale);
     } catch {
       /* ignore */
     }
-    if (reload) window.location.reload();
+    if (!reload) return;
+    try {
+      const u = new URL(window.location.href);
+      if (normalized === 'zh') {
+        u.searchParams.delete('lang');
+        u.searchParams.delete('locale');
+      } else {
+        u.searchParams.set('lang', normalized);
+      }
+      window.location.assign(`${u.pathname}${u.search}${u.hash}`);
+    } catch {
+      window.location.reload();
+    }
   };
 
   const initFromUrl = () => {
