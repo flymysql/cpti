@@ -25,8 +25,6 @@ const selfResult = document.querySelector('#self-result');
 const needResult = document.querySelector('#need-result');
 const resultTags = document.querySelector('#result-tags');
 const resultNote = document.querySelector('#result-note');
-const shareCopy = document.querySelector('#share-copy');
-const copyButton = document.querySelector('#copy-result');
 const floatingShareActions = document.querySelector('#floating-share-actions');
 const shareButton = document.querySelector('#share-result');
 const matchShareButton = document.querySelector('#share-match-result');
@@ -44,10 +42,6 @@ const restartButton = document.querySelector('#restart-result');
 const resultEmptyTitle = document.querySelector('#result-empty-title');
 const resultEmptyCopy = document.querySelector('#result-empty-copy');
 const resultCatalogIntro = document.querySelector('#result-catalog-intro');
-const shareLinkHint = document.querySelector('#share-link-hint');
-const copyResultLinkButton = document.querySelector('#copy-result-link');
-const webShareResultButton = document.querySelector('#web-share-result');
-const shareTemplateGrid = document.querySelector('.share-template-grid');
 
 let lastComputed = null;
 let autoShareOpened = false;
@@ -65,22 +59,6 @@ const getResultPageShareUrl = (computed) => {
   } catch {
     return `https://cpti.cc/result.html?${qs}`;
   }
-};
-
-const buildShareBundle = (computed) => {
-  if (!computed?.selfProfile || !computed?.needProfile) {
-    return { full: '', short: '', dm: '', xhs: '', url: 'https://cpti.cc/' };
-  }
-  const url = getResultPageShareUrl(computed);
-  const selfName = computed.selfProfile.name;
-  const needName = computed.needProfile.name;
-  return {
-    full: computed.shareCopy,
-    short: `CPTI｜我是「${selfName}」，最搭「${needName}」 ${url}`,
-    dm: `我测完 CPTI 啦：我是「${selfName}」，系统说最适合我的是「${needName}」这种类型～你也测测？ ${url}`,
-    xhs: `#CPTI恋爱人格测试#\n我测出来是「${selfName}」，和我最匹配的是「${needName}」！你也来交换结果～\n\n${url}`,
-    url,
-  };
 };
 
 const syncCanonicalUrl = (computed) => {
@@ -2405,14 +2383,11 @@ const renderComputedView = (computed) => {
 
   resultTags.innerHTML = computed.resultTags.map((tag) => `<span>${tag}</span>`).join('');
   resultNote.textContent = computed.note;
-  shareCopy.textContent = computed.shareCopy;
 
   if (resultCatalogIntro) {
     const profileCount = Object.keys(profiles).length;
     resultCatalogIntro.textContent = `下面这${profileCount}个类型，既可能是你自己，也可能是最和你匹配的恋人类型；点开卡片还能继续看完整详情。`;
   }
-
-  shareLinkHint?.removeAttribute('hidden');
 
   profileCatalog.innerHTML = Object.values(profiles)
     .map((profile) => catalogHtml(profile, computed.selfProfile.id, computed.needProfile.id))
@@ -2520,91 +2495,6 @@ document.addEventListener('keydown', (event) => {
     showPrevShareSlide();
   } else if (event.key === 'ArrowRight') {
     showNextShareSlide();
-  }
-});
-
-
-copyButton?.addEventListener('click', async () => {
-  const text = shareCopy.textContent;
-  const original = copyButton.textContent;
-
-  try {
-    await navigator.clipboard.writeText(text);
-    copyButton.textContent = '已复制文案';
-  } catch (error) {
-    copyButton.textContent = '复制失败，请手动复制';
-  }
-
-  window.setTimeout(() => {
-    copyButton.textContent = original;
-  }, 1600);
-});
-
-const flashButtonLabel = (button, doneText, originalText, ms = 1600) => {
-  if (!button) return;
-  button.textContent = doneText;
-  window.setTimeout(() => {
-    button.textContent = originalText;
-  }, ms);
-};
-
-copyResultLinkButton?.addEventListener('click', async () => {
-  if (!lastComputed) return;
-  const url = getResultPageShareUrl(lastComputed);
-  const original = copyResultLinkButton.textContent;
-  try {
-    await navigator.clipboard.writeText(url);
-    flashButtonLabel(copyResultLinkButton, '已复制链接', original);
-  } catch (error) {
-    flashButtonLabel(copyResultLinkButton, '复制失败', original);
-  }
-});
-
-webShareResultButton?.addEventListener('click', async () => {
-  if (!lastComputed) return;
-  const bundle = buildShareBundle(lastComputed);
-  const original = webShareResultButton.textContent;
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        title: 'CPTI 恋爱人格',
-        text: bundle.short,
-        url: bundle.url,
-      });
-    } catch (error) {
-      if (error?.name !== 'AbortError') {
-        flashButtonLabel(webShareResultButton, '分享失败', original);
-      }
-    }
-    return;
-  }
-
-  try {
-    await navigator.clipboard.writeText(bundle.dm);
-    flashButtonLabel(webShareResultButton, '已复制私聊版', original);
-  } catch (error) {
-    flashButtonLabel(webShareResultButton, '复制失败', original);
-  }
-});
-
-shareTemplateGrid?.addEventListener('click', async (event) => {
-  const button = event.target.closest('[data-share-template]');
-  if (!button || !lastComputed) return;
-  const key = button.getAttribute('data-share-template');
-  const bundle = buildShareBundle(lastComputed);
-  const map = {
-    short: bundle.short,
-    dm: bundle.dm,
-    xhs: bundle.xhs,
-  };
-  const text = map[key];
-  if (!text) return;
-  const original = button.textContent;
-  try {
-    await navigator.clipboard.writeText(text);
-    flashButtonLabel(button, '已复制', original, 1200);
-  } catch (error) {
-    flashButtonLabel(button, '失败', original, 1200);
   }
 });
 

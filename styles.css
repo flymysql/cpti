@@ -863,6 +863,10 @@ main {
   font-size: clamp(2rem, 6vw, 3.4rem);
 }
 
+.feature-grid.two {
+  grid-template-columns: 1fr;
+}
+
 .feature-grid.three {
   grid-template-columns: 1fr;
 }
@@ -2572,6 +2576,7 @@ main {
 }
 
 @media (min-width: 720px) {
+  .feature-grid.two,
   .feature-grid.three,
   .feature-grid.four,
   .quiz-toolbar,
@@ -2614,6 +2619,10 @@ main {
 
   .page-home .hero {
     grid-template-columns: 1fr;
+  }
+
+  .feature-grid.two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .feature-grid.three {
