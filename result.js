@@ -753,6 +753,40 @@ const drawDiamondFrame = (ctx, cx, cy, size, options = {}) => {
   }
 };
 
+const drawTwelvePointStarPath = (ctx, cx, cy, outerRadius, innerRadius) => {
+  const spikes = 12;
+  let rot = -Math.PI / 2;
+  const step = Math.PI / spikes;
+  ctx.beginPath();
+  for (let i = 0; i < spikes * 2; i += 1) {
+    const r = i % 2 === 0 ? outerRadius : innerRadius;
+    ctx.lineTo(cx + Math.cos(rot) * r, cy + Math.sin(rot) * r);
+    rot += step;
+  }
+  ctx.closePath();
+};
+
+const drawTwelvePointStarSparkle = (ctx, cx, cy, outerRadius, accent, compact) => {
+  const step = Math.PI / 12;
+  const rGlow = compact ? 7 : 10;
+  for (let k = 0; k < 12; k += 1) {
+    const a = -Math.PI / 2 + k * 2 * step;
+    const sx = cx + Math.cos(a) * (outerRadius + 2);
+    const sy = cy + Math.sin(a) * (outerRadius + 2);
+    ctx.save();
+    ctx.globalAlpha = 0.48;
+    const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, rGlow);
+    g.addColorStop(0, '#ffffff');
+    g.addColorStop(0.42, accent);
+    g.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(sx, sy, rGlow, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+};
+
 const drawAvatarLabel = (ctx, text, x, y, size, options = {}) => {
 
 
@@ -1304,62 +1338,91 @@ const generateShareImage = async (computed, options = {}) => {
     const centerX = frameX + frameSize / 2;
 
     const centerY = frameY + frameSize / 2;
-    const diamondSize = frameSize - (isComparePortrait ? 28 : 34);
-    const innerDiamondSize = diamondSize - (isComparePortrait ? 26 : 32);
+    const starScale = isComparePortrait ? 0.9 : 1;
+    const starOuterR = frameSize * 0.46 * starScale;
+    const starInnerR = starOuterR * 0.44;
 
     ctx.save();
-    ctx.globalAlpha = 0.65;
-    drawDiamondPath(ctx, centerX, centerY, innerDiamondSize + (isComparePortrait ? 10 : 14));
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+    ctx.globalAlpha = 0.55;
+    drawTwelvePointStarPath(ctx, centerX, centerY, starOuterR + 18, (starOuterR + 18) * 0.44);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.72)';
     ctx.fill();
     ctx.restore();
 
-    const outerFrameSize = diamondSize + (isComparePortrait ? 26 : 32);
-    const midFrameSize = diamondSize + (isComparePortrait ? 10 : 14);
-    drawDiamondFrame(ctx, centerX, centerY, outerFrameSize, {
-      ringCount: 1,
-      gap: 0,
-      lineWidth: isComparePortrait ? 7 : 8,
-      stroke: '#7fe3ff',
-      glow: 'rgba(127, 227, 255, 0.65)',
-    });
-    drawDiamondFrame(ctx, centerX, centerY, midFrameSize, {
-      ringCount: 1,
-      gap: 0,
-      lineWidth: isComparePortrait ? 6 : 7,
-      stroke: '#ffd27a',
-      glow: 'rgba(255, 210, 122, 0.55)',
-    });
-    drawDiamondFrame(ctx, centerX, centerY, midFrameSize - (isComparePortrait ? 18 : 22), {
-      ringCount: 1,
-      gap: 0,
-      lineWidth: isComparePortrait ? 6 : 7,
-      stroke: '#b78cff',
-      glow: 'rgba(183, 140, 255, 0.55)',
-    });
-    drawDiamondFrame(ctx, centerX, centerY, diamondSize, {
-      ringCount: isComparePortrait ? 2 : 3,
-      gap: isComparePortrait ? 16 : 22,
-      lineWidth: isComparePortrait ? 5 : 6,
-      stroke: accent,
-      glow: cardTheme.accentGlow,
+    const starRings = [
+      {
+        o: starOuterR + 14,
+        i: (starOuterR + 14) * 0.44,
+        stroke: '#aef5ff',
+        lw: isComparePortrait ? 6 : 8,
+        glow: 'rgba(160, 245, 255, 0.95)',
+        blur: isComparePortrait ? 18 : 24,
+      },
+      {
+        o: starOuterR + 8,
+        i: (starOuterR + 8) * 0.44,
+        stroke: '#ffe6a8',
+        lw: isComparePortrait ? 5 : 7,
+        glow: 'rgba(255, 230, 168, 0.9)',
+        blur: isComparePortrait ? 16 : 20,
+      },
+      {
+        o: starOuterR + 3,
+        i: (starOuterR + 3) * 0.44,
+        stroke: '#e6c2ff',
+        lw: isComparePortrait ? 5 : 6,
+        glow: 'rgba(230, 194, 255, 0.82)',
+        blur: isComparePortrait ? 14 : 18,
+      },
+      {
+        o: starOuterR,
+        i: starInnerR,
+        stroke: accent,
+        lw: isComparePortrait ? 5 : 6,
+        glow: cardTheme.accentGlow,
+        blur: isComparePortrait ? 16 : 22,
+      },
+    ];
+    starRings.forEach((ring) => {
+      ctx.save();
+      ctx.shadowColor = ring.glow;
+      ctx.shadowBlur = ring.blur;
+      drawTwelvePointStarPath(ctx, centerX, centerY, ring.o, ring.i);
+      ctx.strokeStyle = ring.stroke;
+      ctx.lineWidth = ring.lw;
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+      ctx.restore();
     });
 
-
-
+    const clipOuter = starOuterR - 4;
+    const clipInner = clipOuter * 0.44;
     const avatarZoom = isComparePortrait ? 1.08 : 1.2;
-    const drawSize = innerDiamondSize * avatarZoom;
+    const drawSize = clipOuter * 2 * avatarZoom * 0.9;
     const drawX = centerX - drawSize / 2;
     const drawY = centerY - drawSize / 2 - (isComparePortrait ? 4 : 8);
     try {
       const avatar = await loadImage(profile.avatarImage);
       ctx.save();
-      drawDiamondPath(ctx, centerX, centerY, innerDiamondSize);
+      drawTwelvePointStarPath(ctx, centerX, centerY, clipOuter, clipInner);
       ctx.clip();
-      ctx.fillStyle = 'rgba(248, 250, 253, 0.96)';
-      ctx.fillRect(centerX - innerDiamondSize / 2, centerY - innerDiamondSize / 2, innerDiamondSize, innerDiamondSize);
+      const faceGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, clipOuter * 1.15);
+      faceGrad.addColorStop(0, 'rgba(255, 252, 255, 0.98)');
+      faceGrad.addColorStop(1, 'rgba(255, 236, 246, 0.96)');
+      ctx.fillStyle = faceGrad;
+      drawTwelvePointStarPath(ctx, centerX, centerY, clipOuter, clipInner);
+      ctx.fill();
       ctx.drawImage(avatar, drawX, drawY, drawSize, drawSize);
       ctx.restore();
+
+      ctx.save();
+      drawTwelvePointStarPath(ctx, centerX, centerY, clipOuter + 1.2, clipInner + 0.55);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+      ctx.lineWidth = isComparePortrait ? 1.5 : 2;
+      ctx.stroke();
+      ctx.restore();
+
+      drawTwelvePointStarSparkle(ctx, centerX, centerY, starOuterR, accent, isComparePortrait);
     } catch (error) {
       // ignore avatar draw failures
     }
