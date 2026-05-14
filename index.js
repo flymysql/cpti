@@ -213,11 +213,39 @@ const renderHome = () => {
 };
 
 
-/** After window load + idle, swap catalog thumbs for full-size URLs (HTTP cache helps profile/result later). */
+/**
+ * After the window `load` event, wait for catalog thumbnail `<img>` slots to
+ * finish (or time out for `loading="lazy"` off-screen slots), then in an idle
+ * slice swap to full-size URLs — same strings as profile/result so the
+ * browser HTTP cache can reuse them on navigation.
+ */
+const waitForCatalogThumbSlots = (timeoutMs = 6000) => {
+  const imgs = homeCatalog.querySelectorAll(
+    'a.home-catalog-card.profile-card-link[data-profile-id] img.home-catalog-avatar-img',
+  );
+  const list = Array.from(imgs).filter((n) => n instanceof HTMLImageElement);
+  if (!list.length) return Promise.resolve();
+
+  const waitOne = (img) => {
+    if (img.complete) return Promise.resolve();
+    return new Promise((resolve) => {
+      img.addEventListener('load', resolve, { once: true });
+      img.addEventListener('error', resolve, { once: true });
+    });
+  };
+
+  return Promise.race([
+    Promise.all(list.map(waitOne)),
+    new Promise((resolve) => {
+      window.setTimeout(resolve, timeoutMs);
+    }),
+  ]);
+};
+
 const scheduleHomeCatalogAvatarHydrate = () => {
   if (!homeCatalog) return;
 
-  const hydrate = () => {
+  const hydrateFullRaster = () => {
     homeCatalog.querySelectorAll('a.home-catalog-card.profile-card-link[data-profile-id] img.home-catalog-avatar-img').forEach((img) => {
       if (!(img instanceof HTMLImageElement) || img.dataset.avatarHydrated === '1') return;
       const link = img.closest('a[data-profile-id]');
@@ -236,18 +264,22 @@ const scheduleHomeCatalogAvatarHydrate = () => {
     });
   };
 
-  const kick = () => {
+  const kickIdleHydrate = () => {
     if (typeof window.requestIdleCallback === 'function') {
-      window.requestIdleCallback(() => hydrate(), { timeout: 2800 });
+      window.requestIdleCallback(() => hydrateFullRaster(), { timeout: 3200 });
     } else {
-      window.setTimeout(hydrate, 400);
+      window.setTimeout(hydrateFullRaster, 400);
     }
   };
 
+  const afterLoad = () => {
+    waitForCatalogThumbSlots().then(() => kickIdleHydrate());
+  };
+
   if (document.readyState === 'complete') {
-    kick();
+    afterLoad();
   } else {
-    window.addEventListener('load', kick, { once: true });
+    window.addEventListener('load', afterLoad, { once: true });
   }
 };
 
