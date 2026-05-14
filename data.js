@@ -19,6 +19,85 @@
     nonbinary: '非二元 / 其他',
   };
 
+  /** Archetypes with a single gendered asset (matches generated-avatars/*.png naming). */
+  const RASTER_AVATAR_EXPLICIT_IDS = new Set(['badboy', 'badgirl', 'daddy', 'manmom', 'mom']);
+
+  const joinUrl = (base, file) => {
+    try {
+      return new URL(file, base).href;
+    } catch {
+      return `${base}${file}`;
+    }
+  };
+
+  const getRasterAvatarFolderHref = (subfolder = '') => {
+    try {
+      const u = new URL(`./generated-avatars/${subfolder}`, window.location.href);
+      return u.href;
+    } catch {
+      return `./generated-avatars/${subfolder}`;
+    }
+  };
+
+  const pickNeutralVariantSuffix = (userGender = '') => {
+    if (userGender === 'male') return 'male';
+    return 'female';
+  };
+
+  const listPreviewVariantSuffix = (profileId = '') => {
+    let h = 0;
+    const s = String(profileId);
+    for (let i = 0; i < s.length; i += 1) {
+      h = (h * 31 + s.charCodeAt(i)) | 0;
+    }
+    return (h >>> 0) % 2 === 0 ? 'male' : 'female';
+  };
+
+  const rasterAvatarFileName = (profileId, userGender = '') => {
+    if (RASTER_AVATAR_EXPLICIT_IDS.has(profileId)) return `${profileId}.png`;
+    return `${profileId}-${pickNeutralVariantSuffix(userGender)}.png`;
+  };
+
+  /**
+   * Full-size raster (1920) for share canvas & profile hero.
+   * @param {string} profileId
+   * @param {string} userGender 'male' | 'female' | 'nonbinary' | ''
+   */
+  const resolveRasterAvatarUrl = (profileId, userGender = '') => {
+    const base = getRasterAvatarFolderHref('');
+    return joinUrl(base, rasterAvatarFileName(profileId, userGender));
+  };
+
+  /**
+   * Thumbnail for lists / avatar wall (generated-avatars/thumbs).
+   * @param {{ quizCompleted?: boolean, userGender?: string }} options
+   */
+  const resolveRasterAvatarThumbUrl = (profileId, options = {}) => {
+    const { quizCompleted = false, userGender = '' } = options;
+    const base = getRasterAvatarFolderHref('thumbs/');
+    let file;
+    if (RASTER_AVATAR_EXPLICIT_IDS.has(profileId)) {
+      file = `${profileId}.png`;
+    } else {
+      const suf = quizCompleted ? pickNeutralVariantSuffix(userGender) : listPreviewVariantSuffix(profileId);
+      file = `${profileId}-${suf}.png`;
+    }
+    return joinUrl(base, file);
+  };
+
+  const getSavedQuizGender = () => {
+    try {
+      const raw = localStorage.getItem(STORAGE.resultKey);
+      if (!raw) return '';
+      const parsed = JSON.parse(raw);
+      const g = parsed?.gender;
+      if (g === 'male' || g === 'female' || g === 'nonbinary') return g;
+      return '';
+    } catch {
+      return '';
+    }
+  };
+
 
   const hexToRgba = (hex, alpha = 1) => {
     const value = hex.replace('#', '');
@@ -1007,11 +1086,17 @@
   const renderBrandAvatar = (root = document) => {
     const brandMarks = root?.querySelectorAll?.('.brand-mark-avatar');
     const brandProfile = profiles[brandAvatarProfileId];
-    if (!brandMarks?.length || !brandProfile?.avatarImage) return;
+    if (!brandMarks?.length || !brandProfile) return;
+
+    const savedGender = getSavedQuizGender();
+    const brandSrc = resolveRasterAvatarThumbUrl(brandAvatarProfileId, {
+      quizCompleted: Boolean(savedGender),
+      userGender: savedGender,
+    });
 
     brandMarks.forEach((mark) => {
       if (!(mark instanceof HTMLElement) || mark.dataset.avatarReady === 'true') return;
-      mark.innerHTML = `<img class='brand-mark-avatar-image' src='${brandProfile.brandAvatarImage || brandProfile.avatarImage}' alt='${brandProfile.name} 头像' decoding='async' />`;
+      mark.innerHTML = `<img class='brand-mark-avatar-image' src='${brandSrc}' alt='${brandProfile.name} 头像' decoding='async' />`;
 
       mark.dataset.avatarReady = 'true';
       mark.style.setProperty('--brand-avatar-accent', brandProfile.accent || '#ff9fc0');
@@ -9557,85 +9642,6 @@ const getQuestionWeight = (question, mode = 'self') => {
       params.set('nc', String(Math.round(computed.needConfidence)));
     }
     return params.toString();
-  };
-
-  /** Archetypes with a single gendered asset (matches generated-avatars/*.png naming). */
-  const RASTER_AVATAR_EXPLICIT_IDS = new Set(['badboy', 'badgirl', 'daddy', 'manmom', 'mom']);
-
-  const joinUrl = (base, file) => {
-    try {
-      return new URL(file, base).href;
-    } catch {
-      return `${base}${file}`;
-    }
-  };
-
-  const getRasterAvatarFolderHref = (subfolder = '') => {
-    try {
-      const u = new URL(`./generated-avatars/${subfolder}`, window.location.href);
-      return u.href;
-    } catch {
-      return `./generated-avatars/${subfolder}`;
-    }
-  };
-
-  const pickNeutralVariantSuffix = (userGender = '') => {
-    if (userGender === 'male') return 'male';
-    return 'female';
-  };
-
-  const listPreviewVariantSuffix = (profileId = '') => {
-    let h = 0;
-    const s = String(profileId);
-    for (let i = 0; i < s.length; i += 1) {
-      h = (h * 31 + s.charCodeAt(i)) | 0;
-    }
-    return (h >>> 0) % 2 === 0 ? 'male' : 'female';
-  };
-
-  const rasterAvatarFileName = (profileId, userGender = '') => {
-    if (RASTER_AVATAR_EXPLICIT_IDS.has(profileId)) return `${profileId}.png`;
-    return `${profileId}-${pickNeutralVariantSuffix(userGender)}.png`;
-  };
-
-  /**
-   * Full-size raster (1920) for share canvas & profile hero.
-   * @param {string} profileId
-   * @param {string} userGender 'male' | 'female' | 'nonbinary' | ''
-   */
-  const resolveRasterAvatarUrl = (profileId, userGender = '') => {
-    const base = getRasterAvatarFolderHref('');
-    return joinUrl(base, rasterAvatarFileName(profileId, userGender));
-  };
-
-  /**
-   * Thumbnail for lists / avatar wall (generated-avatars/thumbs).
-   * @param {{ quizCompleted?: boolean, userGender?: string }} options
-   */
-  const resolveRasterAvatarThumbUrl = (profileId, options = {}) => {
-    const { quizCompleted = false, userGender = '' } = options;
-    const base = getRasterAvatarFolderHref('thumbs/');
-    let file;
-    if (RASTER_AVATAR_EXPLICIT_IDS.has(profileId)) {
-      file = `${profileId}.png`;
-    } else {
-      const suf = quizCompleted ? pickNeutralVariantSuffix(userGender) : listPreviewVariantSuffix(profileId);
-      file = `${profileId}-${suf}.png`;
-    }
-    return joinUrl(base, file);
-  };
-
-  const getSavedQuizGender = () => {
-    try {
-      const raw = localStorage.getItem(STORAGE.resultKey);
-      if (!raw) return '';
-      const parsed = JSON.parse(raw);
-      const g = parsed?.gender;
-      if (g === 'male' || g === 'female' || g === 'nonbinary') return g;
-      return '';
-    } catch {
-      return '';
-    }
   };
 
   window.CPTI_DATA = {

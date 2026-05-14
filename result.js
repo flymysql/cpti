@@ -88,7 +88,6 @@ let shareCarouselHoldStartX = 0;
 let shareCarouselHoldStartY = 0;
 const SHARE_CAROUSEL_INTERVAL_MS = 5000;
 const SHARE_CAROUSEL_PAUSE_HOLD_MS = 450;
-const SHARE_AVATAR_FRAME_SIDES = 6;
 
 const getShareQrLandingUrl = () => {
   try {
@@ -788,39 +787,6 @@ const drawDiamondFrame = (ctx, cx, cy, size, options = {}) => {
   }
 };
 
-/** Regular n-gon (flat sides), e.g. hexagon for `sides = 6`. */
-const drawRegularPolygonPath = (ctx, cx, cy, radius, sides = 12) => {
-  ctx.beginPath();
-  for (let i = 0; i < sides; i += 1) {
-    const a = -Math.PI / 2 + (i * 2 * Math.PI) / sides;
-    const x = cx + Math.cos(a) * radius;
-    const y = cy + Math.sin(a) * radius;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.closePath();
-};
-
-const drawPolygonVertexSparkle = (ctx, cx, cy, radius, accent, compact, sides = 6) => {
-  const rGlow = compact ? 7 : 10;
-  for (let k = 0; k < sides; k += 1) {
-    const a = -Math.PI / 2 + (k * 2 * Math.PI) / sides;
-    const sx = cx + Math.cos(a) * (radius + 2);
-    const sy = cy + Math.sin(a) * (radius + 2);
-    ctx.save();
-    ctx.globalAlpha = 0.48;
-    const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, rGlow);
-    g.addColorStop(0, '#ffffff');
-    g.addColorStop(0.42, accent);
-    g.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(sx, sy, rGlow, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-};
-
 const drawAvatarLabel = (ctx, text, x, y, size, options = {}) => {
 
 
@@ -1394,83 +1360,53 @@ const generateShareImage = async (computed, options = {}) => {
     const centerY = frameY + frameSize / 2;
     const polyScale = isComparePortrait ? 0.9 : 1;
     const polyOuterR = frameSize * 0.46 * polyScale;
+    const yOff = isComparePortrait ? 4 : 8;
+    const clipSide = Math.min(frameSize * 0.88, polyOuterR * 2 - 6);
+    const clipX = centerX - clipSide / 2;
+    const clipY = centerY - clipSide / 2 - yOff;
+    const clipR = Math.max(12, Math.min(30, clipSide * 0.11));
 
     ctx.save();
-    ctx.globalAlpha = 0.55;
-    drawRegularPolygonPath(ctx, centerX, centerY, polyOuterR + 18, SHARE_AVATAR_FRAME_SIDES);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.72)';
+    ctx.globalAlpha = 0.5;
+    drawRoundedRect(ctx, clipX - 10, clipY - 10, clipSide + 20, clipSide + 20, clipR + 8);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
     ctx.fill();
     ctx.restore();
 
-    const polyRings = [
-      {
-        r: polyOuterR + 14,
-        stroke: '#aef5ff',
-        lw: isComparePortrait ? 6 : 8,
-        glow: 'rgba(160, 245, 255, 0.95)',
-        blur: isComparePortrait ? 18 : 24,
-      },
-      {
-        r: polyOuterR + 8,
-        stroke: '#ffe6a8',
-        lw: isComparePortrait ? 5 : 7,
-        glow: 'rgba(255, 230, 168, 0.9)',
-        blur: isComparePortrait ? 16 : 20,
-      },
-      {
-        r: polyOuterR + 3,
-        stroke: '#e6c2ff',
-        lw: isComparePortrait ? 5 : 6,
-        glow: 'rgba(230, 194, 255, 0.82)',
-        blur: isComparePortrait ? 14 : 18,
-      },
-      {
-        r: polyOuterR,
-        stroke: accent,
-        lw: isComparePortrait ? 5 : 6,
-        glow: cardTheme.accentGlow,
-        blur: isComparePortrait ? 16 : 22,
-      },
-    ];
-    polyRings.forEach((ring) => {
-      ctx.save();
-      ctx.shadowColor = ring.glow;
-      ctx.shadowBlur = ring.blur;
-      drawRegularPolygonPath(ctx, centerX, centerY, ring.r, SHARE_AVATAR_FRAME_SIDES);
-      ctx.strokeStyle = ring.stroke;
-      ctx.lineWidth = ring.lw;
-      ctx.lineJoin = 'round';
-      ctx.stroke();
-      ctx.restore();
-    });
-
-    const clipRadius = polyOuterR - 4;
     const avatarZoom = isComparePortrait ? 1.08 : 1.2;
-    const drawSize = clipRadius * 2 * avatarZoom * 0.9;
+    const drawSize = clipSide * avatarZoom;
     const drawX = centerX - drawSize / 2;
-    const drawY = centerY - drawSize / 2 - (isComparePortrait ? 4 : 8);
+    const drawY = centerY - drawSize / 2 - yOff;
     try {
       const avatar = await loadImage(avatarSrc || profile.avatarImage);
       ctx.save();
-      drawRegularPolygonPath(ctx, centerX, centerY, clipRadius, SHARE_AVATAR_FRAME_SIDES);
+      drawRoundedRect(ctx, clipX, clipY, clipSide, clipSide, clipR);
       ctx.clip();
-      const faceGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, clipRadius * 1.15);
+      const faceGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, clipSide * 0.55);
       faceGrad.addColorStop(0, 'rgba(255, 252, 255, 0.98)');
       faceGrad.addColorStop(1, 'rgba(255, 236, 246, 0.96)');
       ctx.fillStyle = faceGrad;
-      drawRegularPolygonPath(ctx, centerX, centerY, clipRadius, SHARE_AVATAR_FRAME_SIDES);
+      drawRoundedRect(ctx, clipX, clipY, clipSide, clipSide, clipR);
       ctx.fill();
       ctx.drawImage(avatar, drawX, drawY, drawSize, drawSize);
       ctx.restore();
 
       ctx.save();
-      drawRegularPolygonPath(ctx, centerX, centerY, clipRadius + 1.2, SHARE_AVATAR_FRAME_SIDES);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
-      ctx.lineWidth = isComparePortrait ? 1.5 : 2;
+      drawRoundedRect(ctx, clipX, clipY, clipSide, clipSide, clipR);
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = isComparePortrait ? 3 : 4;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.12)';
+      ctx.shadowBlur = 10;
       ctx.stroke();
       ctx.restore();
 
-      drawPolygonVertexSparkle(ctx, centerX, centerY, polyOuterR, accent, isComparePortrait, SHARE_AVATAR_FRAME_SIDES);
+      ctx.save();
+      drawRoundedRect(ctx, clipX + 1, clipY + 1, clipSide - 2, clipSide - 2, Math.max(8, clipR - 2));
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.lineWidth = isComparePortrait ? 1.25 : 1.5;
+      ctx.shadowBlur = 0;
+      ctx.stroke();
+      ctx.restore();
     } catch (error) {
       // ignore avatar draw failures
     }
