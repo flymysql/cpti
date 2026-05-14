@@ -20,7 +20,6 @@ const submitLabel = document.querySelector('#submit-label');
 const submitBar = document.querySelector('.submit-bar');
 const zodiacSelect = document.querySelector('#zodiac-select');
 const genderSelect = document.querySelector('#gender-select');
-const restartButton = document.querySelector('#restart-all');
 const stageFloatingProgress = document.querySelector('#stage-floating-progress');
 const stageFloatingStage = document.querySelector('#stage-floating-stage');
 const stageProgressFill = document.querySelector('#stage-progress-fill');
@@ -186,17 +185,6 @@ const saveProgress = () => {
   );
 };
 
-
-const clearAll = () => {
-  state.answers = {};
-  state.zodiac = '';
-  state.gender = '';
-  localStorage.removeItem(STORAGE.progressKey);
-  localStorage.removeItem(STORAGE.resultKey);
-  milestoneAnnounced.clear();
-  pendingStageTransitionIndices.length = 0;
-  lastQuizToastAtAnswered = -Infinity;
-};
 
 const optionHtml = (questionId, option, index, isSelected) => `
   <button
@@ -691,23 +679,6 @@ stageToastClose?.addEventListener('click', () => {
   hideStageToast();
 });
 
-restartButton.addEventListener('click', () => {
-
-  const confirmed = window.confirm(L('quiz.restartConfirm'));
-  if (!confirmed) return;
-
-  clearAll();
-  hideStageToast();
-  populateZodiac();
-  populateGender();
-  renderQuestions();
-  updateSummary();
-  syncStageJourney();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-});
-
-
-
 submitButton.addEventListener('click', () => {
   const answered = countAnswered(state.answers);
   if (answered !== questions.length) return;
@@ -769,16 +740,11 @@ const applyQuizChrome = () => {
   }
   document.querySelectorAll('.topbar-actions .topbar-link').forEach((el) => {
     const href = el.getAttribute('href') || '';
-    if (href.includes('index.html')) {
-      el.textContent = L('common.home');
-      el.setAttribute('href', I18N.withLang('./index.html'));
-    }
     if (href.includes('result.html')) {
       el.textContent = L('common.result');
       el.setAttribute('href', I18N.withLang('./result.html'));
     }
   });
-  if (restartButton) restartButton.textContent = L('quiz.restart');
   const subHint = document.querySelector('.submit-bar small');
   if (subHint) subHint.textContent = L('quiz.submitHint');
   if (submitLabel) submitLabel.textContent = L('quiz.submitLoading');
