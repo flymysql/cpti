@@ -50,6 +50,15 @@ let activeShareSlideIndex = 0;
 let shareAssetCache = null;
 let shareAssetPromises = null;
 let shareTouchStartX = null;
+let shareCarouselTimer = null;
+let shareCarouselPaused = false;
+let shareCarouselHoldTimer = null;
+let shareCarouselHoldActive = false;
+let shareCarouselHoldStartX = 0;
+let shareCarouselHoldStartY = 0;
+const SHARE_CAROUSEL_INTERVAL_MS = 5000;
+const SHARE_CAROUSEL_PAUSE_HOLD_MS = 450;
+const SHARE_AVATAR_FRAME_SIDES = 8;
 
 const getResultPageShareUrl = (computed) => {
   const qs = buildResultQueryString(computed);
@@ -731,7 +740,7 @@ const drawDiamondFrame = (ctx, cx, cy, size, options = {}) => {
   }
 };
 
-/** Regular 12-gon (dodecagon), flat sides — not a star. */
+/** Regular n-gon (flat sides), e.g. octagon for `sides = 8`. */
 const drawRegularPolygonPath = (ctx, cx, cy, radius, sides = 12) => {
   ctx.beginPath();
   for (let i = 0; i < sides; i += 1) {
@@ -744,8 +753,7 @@ const drawRegularPolygonPath = (ctx, cx, cy, radius, sides = 12) => {
   ctx.closePath();
 };
 
-const drawDodecagonVertexSparkle = (ctx, cx, cy, radius, accent, compact) => {
-  const sides = 12;
+const drawPolygonVertexSparkle = (ctx, cx, cy, radius, accent, compact, sides = 8) => {
   const rGlow = compact ? 7 : 10;
   for (let k = 0; k < sides; k += 1) {
     const a = -Math.PI / 2 + (k * 2 * Math.PI) / sides;
@@ -1197,7 +1205,7 @@ const generateShareImage = async (computed, options = {}) => {
   await document.fonts?.ready;
 
   const {
-    subtitleText = '属于你的恋爱侧写',
+    subtitleText = '属于你的角色简介',
     footerText = '长按保存「记忆卡」· 记录你的恋语瞬间（仅供娱乐）',
     themeVariant = 'self',
     compareProfiles = null,
@@ -1321,7 +1329,7 @@ const generateShareImage = async (computed, options = {}) => {
 
     ctx.save();
     ctx.globalAlpha = 0.55;
-    drawRegularPolygonPath(ctx, centerX, centerY, polyOuterR + 18);
+    drawRegularPolygonPath(ctx, centerX, centerY, polyOuterR + 18, SHARE_AVATAR_FRAME_SIDES);
     ctx.fillStyle = 'rgba(255, 255, 255, 0.72)';
     ctx.fill();
     ctx.restore();
@@ -1360,7 +1368,7 @@ const generateShareImage = async (computed, options = {}) => {
       ctx.save();
       ctx.shadowColor = ring.glow;
       ctx.shadowBlur = ring.blur;
-      drawRegularPolygonPath(ctx, centerX, centerY, ring.r);
+      drawRegularPolygonPath(ctx, centerX, centerY, ring.r, SHARE_AVATAR_FRAME_SIDES);
       ctx.strokeStyle = ring.stroke;
       ctx.lineWidth = ring.lw;
       ctx.lineJoin = 'round';
@@ -1376,25 +1384,25 @@ const generateShareImage = async (computed, options = {}) => {
     try {
       const avatar = await loadImage(profile.avatarImage);
       ctx.save();
-      drawRegularPolygonPath(ctx, centerX, centerY, clipRadius);
+      drawRegularPolygonPath(ctx, centerX, centerY, clipRadius, SHARE_AVATAR_FRAME_SIDES);
       ctx.clip();
       const faceGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, clipRadius * 1.15);
       faceGrad.addColorStop(0, 'rgba(255, 252, 255, 0.98)');
       faceGrad.addColorStop(1, 'rgba(255, 236, 246, 0.96)');
       ctx.fillStyle = faceGrad;
-      drawRegularPolygonPath(ctx, centerX, centerY, clipRadius);
+      drawRegularPolygonPath(ctx, centerX, centerY, clipRadius, SHARE_AVATAR_FRAME_SIDES);
       ctx.fill();
       ctx.drawImage(avatar, drawX, drawY, drawSize, drawSize);
       ctx.restore();
 
       ctx.save();
-      drawRegularPolygonPath(ctx, centerX, centerY, clipRadius + 1.2);
+      drawRegularPolygonPath(ctx, centerX, centerY, clipRadius + 1.2, SHARE_AVATAR_FRAME_SIDES);
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
       ctx.lineWidth = isComparePortrait ? 1.5 : 2;
       ctx.stroke();
       ctx.restore();
 
-      drawDodecagonVertexSparkle(ctx, centerX, centerY, polyOuterR, accent, isComparePortrait);
+      drawPolygonVertexSparkle(ctx, centerX, centerY, polyOuterR, accent, isComparePortrait, SHARE_AVATAR_FRAME_SIDES);
     } catch (error) {
       // ignore avatar draw failures
     }
@@ -2012,7 +2020,7 @@ const generateMatchShareImage = async (computed) => {
   };
 
   return generateShareImage(matchedComputed, {
-    subtitleText: '与他的恋语侧写',
+    subtitleText: '与他的角色简介',
     footerText: '长按保存「羁绊记忆卡」· 适合与 Ta 一起收藏（仅供娱乐）',
     themeVariant: 'match',
     qrTargetUrl: getResultPageShareUrl(computed),
@@ -2167,6 +2175,69 @@ const appendMatchShareSlide = async (computed, preferredSlideId = null) => {
   return matchDataUrl;
 };
 
+const clearShareCarouselHoldTimer = () => {
+  if (shareCarouselHoldTimer) {
+    window.clearTimeout(shareCarouselHoldTimer);
+    shareCarouselHoldTimer = null;
+  }
+};
+
+const endShareGalleryHold = () => {
+  clearShareCarouselHoldTimer();
+  shareCarouselHoldActive = false;
+  shareCarouselPaused = false;
+};
+
+const stopShareCarousel = () => {
+  if (shareCarouselTimer) {
+    window.clearInterval(shareCarouselTimer);
+    shareCarouselTimer = null;
+  }
+};
+
+const scheduleShareCarousel = () => {
+  stopShareCarousel();
+  if (!shareModal || shareModal.classList.contains('hidden')) return;
+  if (shareModalSlides.length < 2) return;
+  shareCarouselTimer = window.setInterval(() => {
+    if (shareCarouselPaused) return;
+    const n = shareModalSlides.length;
+    if (n < 2) return;
+    setActiveShareSlide((activeShareSlideIndex + 1) % n);
+  }, SHARE_CAROUSEL_INTERVAL_MS);
+};
+
+const bindShareGalleryCarouselPause = () => {
+  if (!shareGallery || shareGallery.dataset.shareHoldBound) return;
+  shareGallery.dataset.shareHoldBound = '1';
+
+  shareGallery.addEventListener('pointerdown', (event) => {
+    if (shareModal?.classList.contains('hidden')) return;
+    if (shareModalSlides.length < 2) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    shareCarouselHoldActive = true;
+    shareCarouselHoldStartX = event.clientX;
+    shareCarouselHoldStartY = event.clientY;
+    clearShareCarouselHoldTimer();
+    shareCarouselHoldTimer = window.setTimeout(() => {
+      if (shareCarouselHoldActive) shareCarouselPaused = true;
+    }, SHARE_CAROUSEL_PAUSE_HOLD_MS);
+  });
+
+  shareGallery.addEventListener('pointermove', (event) => {
+    if (!shareCarouselHoldTimer) return;
+    const dx = event.clientX - shareCarouselHoldStartX;
+    const dy = event.clientY - shareCarouselHoldStartY;
+    if (dx * dx + dy * dy > 144) {
+      clearShareCarouselHoldTimer();
+      shareCarouselHoldActive = false;
+    }
+  }, { passive: true });
+
+  window.addEventListener('pointerup', endShareGalleryHold, true);
+  window.addEventListener('pointercancel', endShareGalleryHold, true);
+};
+
 const renderShareIndicators = () => {
   if (!shareIndicators) return;
 
@@ -2188,10 +2259,10 @@ const updateShareNavState = () => {
   shareNextButton?.classList.toggle('hidden', !hasMultipleSlides);
 
   if (sharePrevButton) {
-    sharePrevButton.disabled = !hasMultipleSlides || activeShareSlideIndex === 0;
+    sharePrevButton.disabled = !hasMultipleSlides;
   }
   if (shareNextButton) {
-    shareNextButton.disabled = !hasMultipleSlides || activeShareSlideIndex >= shareModalSlides.length - 1;
+    shareNextButton.disabled = !hasMultipleSlides;
   }
 };
 
@@ -2207,6 +2278,7 @@ const setActiveShareSlide = (index = 0) => {
   if (!shareModalSlides.length) return;
   activeShareSlideIndex = Math.max(0, Math.min(index, shareModalSlides.length - 1));
   updateShareGallery();
+  scheduleShareCarousel();
 };
 
 const renderShareGallery = (slides) => {
@@ -2232,6 +2304,9 @@ const renderShareGallery = (slides) => {
 const openShareModal = (slides, startIndex = 0) => {
   if (!shareModal || !shareTrack || !slides?.length) return;
 
+  shareCarouselPaused = false;
+  shareCarouselHoldActive = false;
+  clearShareCarouselHoldTimer();
   activeShareSlideIndex = Math.max(0, Math.min(startIndex, slides.length - 1));
   renderShareGallery(slides);
   shareModal.classList.remove('hidden');
@@ -2240,18 +2315,24 @@ const openShareModal = (slides, startIndex = 0) => {
 
 const closeShareModal = () => {
   shareTouchStartX = null;
+  stopShareCarousel();
+  shareCarouselPaused = false;
+  shareCarouselHoldActive = false;
+  clearShareCarouselHoldTimer();
   shareModal?.classList.add('hidden');
   document.body.style.overflow = '';
 };
 
 const showPrevShareSlide = () => {
-  if (activeShareSlideIndex <= 0) return;
-  setActiveShareSlide(activeShareSlideIndex - 1);
+  const n = shareModalSlides.length;
+  if (n < 2) return;
+  setActiveShareSlide((activeShareSlideIndex - 1 + n) % n);
 };
 
 const showNextShareSlide = () => {
-  if (activeShareSlideIndex >= shareModalSlides.length - 1) return;
-  setActiveShareSlide(activeShareSlideIndex + 1);
+  const n = shareModalSlides.length;
+  if (n < 2) return;
+  setActiveShareSlide((activeShareSlideIndex + 1) % n);
 };
 
 const openSelfSharePreview = async (computed) => {
@@ -2499,6 +2580,8 @@ document.addEventListener('keydown', (event) => {
 });
 
 restartButton?.addEventListener('click', clearDataAndRestart);
+
+bindShareGalleryCarouselPause();
 
 const payload = loadPayload();
 const urlParams = new URLSearchParams(window.location.search);
