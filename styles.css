@@ -266,6 +266,40 @@ main {
   gap: 12px;
 }
 
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid rgba(214, 184, 193, 0.44);
+  background: rgba(255, 248, 251, 0.92);
+}
+
+.lang-switch-btn {
+  min-height: 34px;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #6b3145;
+  font-family: var(--font-pixel);
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.lang-switch-btn:hover {
+  background: rgba(255, 242, 247, 0.95);
+}
+
+.lang-switch-btn.is-active {
+  background: #fff;
+  color: #3a1524;
+  box-shadow: 0 1px 0 rgba(92, 24, 55, 0.12);
+}
+
 .topbar .topbar-link {
   min-height: 42px;
   padding: 10px 16px;

@@ -38,6 +38,7 @@
         </a>
 
         <nav class='topbar-actions' aria-label='快捷入口'>
+          <div class='lang-switch' data-lang-switch aria-label='Language'></div>
           <a class='ghost-button topbar-link' href='./index.html'>首页</a>
           <a class='ghost-button topbar-link' href='./quiz.html'>测试页</a>
           <a class='ghost-button topbar-link' href='./result.html'>结果页</a>
@@ -47,8 +48,8 @@
 
       <main class='container'>
         <section id='profile-empty' class='panel-card empty-state hidden'>
-          <h2>没有找到对应的人格详情</h2>
-          <p>你可以返回首页重新选择人格卡片，或者先去测试页完成测试后再查看结果。</p>
+          <h2 id='profile-empty-title'>没有找到对应的人格详情</h2>
+          <p id='profile-empty-copy'>你可以返回首页重新选择人格卡片，或者先去测试页完成测试后再查看结果。</p>
           <div class='hero-actions compact'>
             <a class='primary-button' href='./index.html'>返回首页</a>
             <a class='secondary-button' href='./quiz.html'>去做测试</a>
@@ -65,9 +66,12 @@
 
     </div>
 
+    <script src='./i18n.js'></script>
     <script src='./profiles/index.js'></script>
     <script src='./data.js'></script>
+    <script src='./profiles-locale-en.js'></script>
     <script src='./profile-details.js'></script>
+    <script src='./profile-details-en.js'></script>
     <script src='./profile.js'></script>
 
     <script defer src="https://events.vercount.one/js"></script>

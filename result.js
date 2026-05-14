@@ -10,6 +10,9 @@ const {
   buildResultQueryString,
 } = window.CPTI_DATA;
 
+const I18N = window.CPTI_I18N;
+const L = (path) => I18N.t(path);
+
 
 
 const resultEmpty = document.querySelector('#result-empty');
@@ -46,14 +49,10 @@ const resultPageTitle = document.querySelector('#result-page-title');
 const resultHeroEyebrow = document.querySelector('#result-hero-eyebrow');
 const resultCatalogSection = document.querySelector('#result-catalog-section');
 
-const DEFAULT_RESULT_HEADING = '你的恋爱人格配方';
-const DEFAULT_HERO_EYEBROW = '你的 CPTI 配方';
-const DEFAULT_DOC_TITLE = 'CPTI | 恋爱人格结果';
-
 const resetShareViewerChrome = () => {
-  document.title = DEFAULT_DOC_TITLE;
-  if (resultPageTitle) resultPageTitle.textContent = DEFAULT_RESULT_HEADING;
-  if (resultHeroEyebrow) resultHeroEyebrow.textContent = DEFAULT_HERO_EYEBROW;
+  document.title = L('result.docTitle');
+  if (resultPageTitle) resultPageTitle.textContent = L('result.headingDefault');
+  if (resultHeroEyebrow) resultHeroEyebrow.textContent = L('result.eyebrowDefault');
   resultCatalogSection?.classList.remove('hidden');
   shareButton?.classList.remove('hidden');
   matchShareButton?.classList.remove('hidden');
@@ -62,9 +61,9 @@ const resetShareViewerChrome = () => {
 };
 
 const applyShareViewerChrome = () => {
-  document.title = 'Ta的恋爱人格配方 | CPTI';
-  if (resultPageTitle) resultPageTitle.textContent = 'Ta的恋爱人格配方';
-  if (resultHeroEyebrow) resultHeroEyebrow.textContent = 'Ta 的 CPTI 配方';
+  document.title = L('result.docTitleTa');
+  if (resultPageTitle) resultPageTitle.textContent = L('result.headingTa');
+  if (resultHeroEyebrow) resultHeroEyebrow.textContent = L('result.eyebrowTa');
   resultCatalogSection?.classList.add('hidden');
   shareButton?.classList.add('hidden');
   matchShareButton?.classList.add('hidden');
@@ -91,7 +90,10 @@ const SHARE_AVATAR_FRAME_SIDES = 6;
 
 const getShareQrLandingUrl = () => {
   try {
-    return new URL('./index.html', window.location.href).href;
+    const u = new URL('./index.html', window.location.href);
+    if (I18N.getLocale() === 'en') u.searchParams.set('lang', 'en');
+    else u.searchParams.delete('lang');
+    return u.href;
   } catch {
     return 'https://cpti.cc/';
   }
@@ -101,10 +103,11 @@ const syncCanonicalUrl = (computed) => {
   const qs = buildResultQueryString(computed);
   if (!qs) return;
   const url = new URL(window.location.href);
-  const next = `?${qs}`;
-  if (url.search === next) return;
-  url.search = qs;
-  history.replaceState(null, '', `${url.pathname}${next}${url.hash}`);
+  const p = new URLSearchParams(qs);
+  if (I18N.getLocale() === 'en') p.set('lang', 'en');
+  else p.delete('lang');
+  url.search = p.toString();
+  history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
 };
 
 
@@ -127,22 +130,22 @@ const showEmptyState = (reason = 'default') => {
   resultView?.classList.add('hidden');
   floatingShareActions?.classList.add('hidden');
   if (resultEmptyTitle) {
-    resultEmptyTitle.textContent = reason === 'badlink' ? '链接里的结果无效' : '还没有可展示的结果';
+    resultEmptyTitle.textContent = reason === 'badlink' ? L('result.emptyTitleBad') : L('result.emptyTitle');
   }
   if (resultEmptyCopy) {
     resultEmptyCopy.textContent = reason === 'badlink'
-      ? '参数可能写错或人格类型已更新。你可以重新测试，或请朋友重新复制分享链接。'
-      : '先去测试页做完题，或让朋友发你带参数的分享链接。';
+      ? L('result.emptyCopyBad')
+      : L('result.emptyCopy');
   }
 };
 
 const clearDataAndRestart = () => {
-  const confirmed = window.confirm('确认清空当前结果并重新开始测试吗？这会删除当前测试进度和结果记录。');
+  const confirmed = window.confirm(L('result.restartConfirm'));
   if (!confirmed) return;
 
   localStorage.removeItem(STORAGE.resultKey);
   localStorage.removeItem(STORAGE.progressKey);
-  window.location.href = './quiz.html';
+  window.location.href = I18N.withLang('./quiz.html');
 };
 
 
@@ -156,22 +159,28 @@ const setFloatingButtonLabel = (button, text) => {
   button.textContent = text;
 };
 
-const avatarHtml = (profile, size = 'large') => `
+const avatarHtml = (profile, size = 'large') => {
+  const lp = I18N.localizeProfile(profile);
+  return `
 
   <div class='avatar-shell ${size}' style='--avatar-accent:${profile.accent}; --avatar-soft:${profile.soft};'>
-    <img src="${profile.avatarImage}" alt="${profile.name} 头像" loading="lazy" />
+    <img src="${profile.avatarImage}" alt="${lp.name}" loading="lazy" />
   </div>
 `;
+};
 
-const heroCastAvatarHtml = (profile, positionClass) => `
+const heroCastAvatarHtml = (profile, positionClass) => {
+  const lp = I18N.localizeProfile(profile);
+  return `
   <div class='result-hero-character ${positionClass}'>
     <div class='result-hero-character-bob'>
       <div class='avatar-shell small result-hero-avatar' style='--avatar-accent:${profile.accent}; --avatar-soft:${profile.soft};'>
-        <img src="${profile.avatarImage}" alt="${profile.name} 头像" loading="lazy" />
+        <img src="${profile.avatarImage}" alt="${lp.name}" loading="lazy" />
       </div>
     </div>
   </div>
 `;
+};
 
 const renderResultHeroCast = (selfProfile, needProfile) => {
   if (!resultHeroCast) return;
@@ -188,7 +197,7 @@ const renderResultHeroCast = (selfProfile, needProfile) => {
   `;
 };
 
-const profileDetailHref = (id, source = 'result') => `./profile.html?id=${encodeURIComponent(id)}&from=${encodeURIComponent(source)}`;
+const profileDetailHref = (id, source = 'result') => I18N.withLang(`./profile.html?id=${encodeURIComponent(id)}&from=${encodeURIComponent(source)}`);
 
 
 const taifyCopy = (text = '') => text.replace(/你/g, 'Ta');
@@ -207,9 +216,16 @@ const getConfidenceRating = (confidence = 0, min = 50, max = 70) => {
 const panelHtml = (title, profile, confidence, mode) => {
 
   const isNeedMode = mode === 'need';
-  const description = isNeedMode ? taifyCopy(profile.description) : profile.description;
-  const longDescription = isNeedMode ? taifyCopy(profile.longDescription) : profile.longDescription;
-  const note = isNeedMode ? taifyCopy(profile.note) : profile.note;
+  const lp = I18N.localizeProfile(profile);
+  const description = isNeedMode
+    ? (I18N.getLocale() === 'en' ? I18N.taifyNeedEn(lp.description) : taifyCopy(lp.description))
+    : lp.description;
+  const longDescription = isNeedMode
+    ? (I18N.getLocale() === 'en' ? I18N.taifyNeedEn(lp.longDescription) : taifyCopy(lp.longDescription))
+    : lp.longDescription;
+  const note = isNeedMode
+    ? (I18N.getLocale() === 'en' ? I18N.taifyNeedEn(lp.note) : taifyCopy(lp.note))
+    : lp.note;
   const rarityLabel = getProfileRarityLabel(profile.id);
   const rarityRating = getProfileRarityRating(profile.id);
   const easeRating = getProfileEaseRating(profile.id);
@@ -220,21 +236,21 @@ const panelHtml = (title, profile, confidence, mode) => {
       <span class='mini-badge'>${title}</span>
       ${avatarHtml(profile, 'large')}
       <div class='result-panel-copy'>
-        <h3>${profile.name}</h3>
+        <h3>${lp.name}</h3>
         <div class='result-metrics'>
           <div class='result-metric'>
-            <span class='result-metric-label'>稀有度</span>
+            <span class='result-metric-label'>${L('result.rarity')}</span>
             <span class='catalog-flag rarity ${rarityLabel.toLowerCase()}'>${rarityLabel}</span>
-            <span class='detail-stars' aria-label='稀有度 ${rarityRating} 星'>${renderStars(rarityRating)}</span>
+            <span class='detail-stars' aria-label='${L('result.rarity')} ${rarityRating}'>${renderStars(rarityRating)}</span>
           </div>
           <div class='result-metric'>
-            <span class='result-metric-label'>容易被拿下程度</span>
-            <span class='detail-stars' aria-label='容易被拿下程度 ${easeRating} 星'>${renderStars(easeRating)}</span>
+            <span class='result-metric-label'>${L('result.ease')}</span>
+            <span class='detail-stars' aria-label='${L('result.ease')} ${easeRating}'>${renderStars(easeRating)}</span>
           </div>
         </div>
         <div class='result-metric is-score'>
-          <span class='result-metric-label'>命中感</span>
-          <span class='detail-stars' aria-label='命中感 ${confidence}% / ${confidenceRating} 星'>${renderStars(confidenceRating)}</span>
+          <span class='result-metric-label'>${L('result.fit')}</span>
+          <span class='detail-stars' aria-label='${L('result.fit')} ${confidence}%'>${renderStars(confidenceRating)}</span>
         </div>
 
       </div>
@@ -244,9 +260,9 @@ const panelHtml = (title, profile, confidence, mode) => {
     <p class='panel-note'>${note}</p>
     <div class='result-tag-row'>
       <div class='tag-row compact'>
-        ${profile.tags.map((tag) => `<span>${tag}</span>`).join('')}
+        ${lp.tags.map((tag) => `<span>${tag}</span>`).join('')}
       </div>
-      <a class='result-detail-button' href='${profileDetailHref(profile.id, 'result')}' aria-label='查看 ${profile.name} 的详细恋爱人格'>查看详细恋爱人格</a>
+      <a class='result-detail-button' href='${profileDetailHref(profile.id, 'result')}' aria-label='${L('result.detailAriaTpl')(lp.name)}'>${L('result.detailCta')}</a>
     </div>
   `;
 };
@@ -1007,7 +1023,7 @@ const getShareCardTheme = (gender = '', variant = 'self') => {
     starColor: 'transparent',
     starGlow: 'transparent',
     avatarFrameFill: 'rgba(255, 255, 255, 0.56)',
-    roleLabel: variant === 'match' ? '匹配' : '自身',
+    roleLabel: variant === 'match' ? L('shareCard.roleMatch') : L('shareCard.roleSelf'),
 
   });
 
@@ -1232,15 +1248,22 @@ const generateShareImage = async (computed, options = {}) => {
   if (!computed) return null;
   await document.fonts?.ready;
 
+  const Sk = (key) => L(`shareCard.${key}`);
+  const Skf = (key, ...args) => {
+    const v = L(`shareCard.${key}`);
+    return typeof v === 'function' ? v(...args) : v;
+  };
+
+  const themeVariant = options.themeVariant || 'self';
   const {
-    subtitleText = '属于你的角色简介',
-    footerText = '长按保存「记忆卡」· 记录你的恋语瞬间（仅供娱乐）',
-    themeVariant = 'self',
+    subtitleText = themeVariant === 'match' ? Sk('subtitleMatch') : Sk('subtitleSelf'),
+    footerText = themeVariant === 'match' ? Sk('footerMatch') : Sk('footerSelf'),
     compareProfiles = null,
   } = options;
 
 
   const selfProfile = computed.selfProfile;
+  const lpSelf = I18N.localizeProfile(selfProfile);
   const qrTargetUrl = getShareQrLandingUrl();
   const isComparePortrait = Boolean(compareProfiles?.left && compareProfiles?.right);
   const width = 900;
@@ -1287,16 +1310,21 @@ const generateShareImage = async (computed, options = {}) => {
   const primaryText = cardTheme.primaryText;
   const secondaryText = cardTheme.secondaryText;
   const mutedText = cardTheme.mutedText;
-  const adaptProfileCopy = (text = '') => (themeVariant === 'match' ? text.replace(/你/g, 'Ta') : text);
-  const introText = adaptProfileCopy(selfProfile.description || '你的恋爱人格角色卡已解锁。');
+  const adaptProfileCopy = (text = '') => {
+    if (themeVariant === 'match') {
+      return I18N.getLocale() === 'en' ? I18N.taifyNeedEn(text) : text.replace(/你/g, 'Ta');
+    }
+    return text;
+  };
+  const introText = adaptProfileCopy(lpSelf.description || Sk('introFallbackSelf'));
   const skillText = adaptProfileCopy(
-    [selfProfile.longDescription, selfProfile.note].filter(Boolean).join(' ') || '正在等待你在关系里继续解锁更多剧情。'
+    [lpSelf.longDescription, lpSelf.note].filter(Boolean).join(' ') || Sk('skillFallbackSelf'),
   );
 
   const cardIdText = `CPTI-${String(selfProfile.id || 'SELF').toUpperCase()}`;
 
 
-  const tags = (selfProfile.tags || []).slice(0, 4);
+  const tags = (lpSelf.tags || []).slice(0, 4);
   const easeRating = getEaseRating(selfProfile);
   const rarityRating = getRarityRating(selfProfile, themeVariant === 'match' ? 'need' : 'self');
   const rarityLabelCard = getRarityLabel(selfProfile);
@@ -1504,7 +1532,7 @@ const generateShareImage = async (computed, options = {}) => {
 
 
   ctx.font = `800 ${nameFontSize}px "Noto Sans SC", sans-serif`;
-  const nameLines = getLines(ctx, selfProfile.name, portraitWidth - 72);
+  const nameLines = getLines(ctx, lpSelf.name, portraitWidth - 72);
   ctx.font = `${subtitleFontSize}px "Noto Sans SC", sans-serif`;
   const subtitleLines = getLines(ctx, subtitleText, portraitWidth - 88);
   const introLines = getLines(ctx, introText, contentWidth);
@@ -1512,14 +1540,14 @@ const generateShareImage = async (computed, options = {}) => {
   const skillLines = skillLinesRaw.slice(0, 5);
 
   ctx.font = '600 16px "Noto Sans SC", sans-serif';
-  const typeLineFull = `${selfProfile.abbr || '—'}｜${rarityLabelCard} · 恋语角色`;
+  const typeLineFull = `${selfProfile.abbr || '—'}｜${rarityLabelCard} · ${Sk('typeLineSuffix')}`;
   const typeLines = getLines(ctx, typeLineFull, portraitWidth - 36);
   const tcgTypeHeight = typeLines.length * 22 + 10;
   const tcgBattleHeight = 100;
-  const flavorPreview = (selfProfile.note || '').trim().slice(0, 80);
+  const flavorPreview = (lpSelf.note || '').trim().slice(0, 80);
   ctx.font = `${bodyFontSize}px "Noto Sans SC", sans-serif`;
   const flavorLines = flavorPreview
-    ? getLines(ctx, `心语：${flavorPreview}`, contentWidth - 4).slice(0, 2)
+    ? getLines(ctx, `${Sk('flavorPrefix')}${flavorPreview}`, contentWidth - 4).slice(0, 2)
     : [];
   const flavorBlockHeight = flavorLines.length ? 16 + flavorLines.length * 22 : 0;
 
@@ -1655,7 +1683,7 @@ const generateShareImage = async (computed, options = {}) => {
   drawPixelBadge(ctx, {
     x: cardX + cardPadding,
     y: headerY,
-    text: '限定记忆 · CPTI',
+    text: Sk('banner'),
 
     fill: cardTheme.headerFill,
     stroke: cardTheme.headerStroke,
@@ -1668,7 +1696,7 @@ const generateShareImage = async (computed, options = {}) => {
   drawPixelBadge(ctx, {
     x: cardX + cardWidth - cardPadding,
     y: headerY,
-    text: `♥ ${rarityLabelCard} 稀有`,
+    text: Skf('rareBadgeTpl', rarityLabelCard),
     fill: cardTheme.roleFill,
     stroke: cardTheme.roleStroke,
     textColor: cardTheme.roleText,
@@ -1727,8 +1755,8 @@ const generateShareImage = async (computed, options = {}) => {
       frameX: leftFrameX,
       frameY: compareFrameY,
       frameSize: avatarFrameSize,
-      title: '卡面立绘',
-      name: compareProfiles.left.name,
+      title: Sk('portraitSelf'),
+      name: I18N.localizeProfile(compareProfiles.left).name,
       mode: 'self',
     });
     await drawAvatarPortrait({
@@ -1736,8 +1764,8 @@ const generateShareImage = async (computed, options = {}) => {
       frameX: rightFrameX,
       frameY: compareFrameY,
       frameSize: avatarFrameSize,
-      title: '羁绊立绘',
-      name: compareProfiles.right.name,
+      title: Sk('portraitMatch'),
+      name: I18N.localizeProfile(compareProfiles.right).name,
       mode: 'need',
     });
 
@@ -1746,7 +1774,7 @@ const generateShareImage = async (computed, options = {}) => {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = '700 34px "Noto Sans SC", sans-serif';
-    ctx.fillText('VS', innerPortraitX + innerPortraitWidth / 2, compareFrameY + avatarFrameSize / 2 + 4);
+    ctx.fillText(Sk('compareVs'), innerPortraitX + innerPortraitWidth / 2, compareFrameY + avatarFrameSize / 2 + 4);
   } else {
 
     const avatarFrameX = innerPortraitX + (innerPortraitWidth - avatarFrameSize) / 2;
@@ -1801,9 +1829,9 @@ const generateShareImage = async (computed, options = {}) => {
   const colW = (portraitWidth - colGap * 2) / 3;
   const rowX0 = cardX + cardPadding;
   drawTcgStatPlate(ctx, rowX0, cursorY, colW, tcgBattleHeight, {
-    label: '好感度',
+    label: Sk('statFavor'),
     value: atk,
-    sub: '恋爱相性',
+    sub: Sk('statFavorSub'),
     fill: cardTheme.panelFill,
     stroke: cardTheme.panelStroke,
     primary: primaryText,
@@ -1811,9 +1839,9 @@ const generateShareImage = async (computed, options = {}) => {
     accent,
   });
   drawTcgStatPlate(ctx, rowX0 + colW + colGap, cursorY, colW, tcgBattleHeight, {
-    label: '守护力',
+    label: Sk('statGuard'),
     value: def,
-    sub: '情绪护盾',
+    sub: Sk('statGuardSub'),
     fill: cardTheme.panelFill,
     stroke: cardTheme.panelStroke,
     primary: primaryText,
@@ -1821,9 +1849,9 @@ const generateShareImage = async (computed, options = {}) => {
     accent,
   });
   drawTcgStatPlate(ctx, rowX0 + (colW + colGap) * 2, cursorY, colW, tcgBattleHeight, {
-    label: '羁绊值',
+    label: Sk('statBond'),
     value: bond,
-    sub: '心动同步',
+    sub: Sk('statBondSub'),
     fill: cardTheme.panelFill,
     stroke: cardTheme.panelStroke,
     primary: primaryText,
@@ -1852,8 +1880,8 @@ const generateShareImage = async (computed, options = {}) => {
   const statX2 = statX1 + statWidth + statGap;
 
   [
-    { x: statX1, label: '收藏编号', value: cardIdText },
-    { x: statX2, label: '心动契合', value: `${computed.selfConfidence}%` },
+    { x: statX1, label: Sk('collId'), value: cardIdText },
+    { x: statX2, label: Sk('pulseFit'), value: `${computed.selfConfidence}%` },
   ].forEach(({ x, label, value }) => {
 
     drawPixelPanel(ctx, x, statY, statWidth, statHeight, {
@@ -1894,7 +1922,7 @@ const generateShareImage = async (computed, options = {}) => {
   ctx.font = '600 17px "Noto Sans SC", sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
-  ctx.fillText('易捕捉程度', easePanelX + infoPanelWidth / 2, cursorY + 26);
+  ctx.fillText(Sk('ease'), easePanelX + infoPanelWidth / 2, cursorY + 26);
 
   const starOuter = 14.2;
   const starInner = 7.1;
@@ -1921,7 +1949,7 @@ const generateShareImage = async (computed, options = {}) => {
   ctx.font = '600 17px "Noto Sans SC", sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
-  ctx.fillText('角色稀有度', rarityPanelX + infoPanelWidth / 2, cursorY + 26);
+  ctx.fillText(Sk('rarity'), rarityPanelX + infoPanelWidth / 2, cursorY + 26);
 
   const rarityStarOuter = 14.2;
   const rarityStarInner = 7.1;
@@ -1943,7 +1971,7 @@ const generateShareImage = async (computed, options = {}) => {
     ctx.fillStyle = mutedText;
     ctx.font = pixelFontSmall;
     ctx.textAlign = 'left';
-    ctx.fillText('关键词', cardX + cardPadding, cursorY + 14);
+    ctx.fillText(Sk('keywords'), cardX + cardPadding, cursorY + 14);
     cursorY += 32;
 
 
@@ -1978,7 +2006,7 @@ const generateShareImage = async (computed, options = {}) => {
     x: cardX + cardPadding,
     y: cursorY,
     width: portraitWidth,
-    title: '角色简介',
+    title: Sk('bioTitle'),
     lines: introLines,
   });
 
@@ -1988,7 +2016,7 @@ const generateShareImage = async (computed, options = {}) => {
     x: cardX + cardPadding,
     y: cursorY,
     width: portraitWidth,
-    title: '专属技能',
+    title: Sk('skillTitle'),
     lines: skillLines,
   });
 
@@ -2017,17 +2045,17 @@ const generateShareImage = async (computed, options = {}) => {
   ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = mutedText;
   ctx.font = pixelFontSmall;
-  ctx.fillText('恋语实验室 · 记忆卡', cardX + cardPadding, footerY + 20);
+  ctx.fillText(Sk('footerBrand'), cardX + cardPadding, footerY + 20);
   ctx.fillStyle = primaryText;
   ctx.font = '700 24px "Noto Sans SC", sans-serif';
-  ctx.fillText('CPTI 恋爱人格实验室', cardX + cardPadding, footerY + 52);
+  ctx.fillText(Sk('footerLabTitle'), cardX + cardPadding, footerY + 52);
   ctx.fillStyle = secondaryText;
   ctx.font = '18px "Noto Sans SC", sans-serif';
   ctx.fillText(footerText, cardX + cardPadding, footerY + 86);
   ctx.fillStyle = mutedText;
 
   ctx.font = '16px "Noto Sans SC", sans-serif';
-  ctx.fillText('cpti.cc © 兰州小红鸡 · 限定卡面仅供分享', cardX + cardPadding, footerY + 126);
+  ctx.fillText(Sk('footerFinePrint'), cardX + cardPadding, footerY + 126);
 
   drawTcgCornerBrackets(ctx, cardX + 1, cardY + 1, cardWidth - 2, cardHeight - 2);
   drawOtomeWatermarkHearts(ctx, cardX, cardY, cardWidth, cardHeight, accent);
@@ -2046,8 +2074,6 @@ const generateMatchShareImage = async (computed) => {
   };
 
   return generateShareImage(matchedComputed, {
-    subtitleText: '与他的角色简介',
-    footerText: '长按保存「羁绊记忆卡」· 适合与 Ta 一起收藏（仅供娱乐）',
     themeVariant: 'match',
     compareProfiles: {
 
@@ -2070,22 +2096,28 @@ const getShareBundleKey = (computed) => JSON.stringify({
 });
 
 const buildShareSlides = (computed, selfDataUrl, matchDataUrl) => {
+  const sp = computed?.selfProfile ? I18N.localizeProfile(computed.selfProfile) : null;
+  const np = computed?.needProfile ? I18N.localizeProfile(computed.needProfile) : null;
   const slides = [];
   if (selfDataUrl) {
     slides.push({
       id: 'self',
-      title: '我的恋爱人格画像',
-      subtitle: computed?.selfProfile?.name || '你的恋爱人格',
-      alt: `${computed?.selfProfile?.name || '你的恋爱人格'} 分享图`,
+      title: L('shareCard.slideTitleSelf'),
+      subtitle: sp?.name || L('shareCard.slideSubSelf'),
+      alt: typeof L('shareCard.slideAltSelfTpl') === 'function'
+        ? L('shareCard.slideAltSelfTpl')(sp?.name)
+        : `${sp?.name || ''} share`,
       dataUrl: selfDataUrl,
     });
   }
   if (matchDataUrl) {
     slides.push({
       id: 'match',
-      title: '和我匹配的人格画像',
-      subtitle: computed?.needProfile?.name || '匹配人格',
-      alt: `${computed?.needProfile?.name || '匹配人格'} 分享图`,
+      title: L('shareCard.slideTitleMatch'),
+      subtitle: np?.name || L('shareCard.slideSubMatch'),
+      alt: typeof L('shareCard.slideAltMatchTpl') === 'function'
+        ? L('shareCard.slideAltMatchTpl')(np?.name)
+        : `${np?.name || ''} share`,
       dataUrl: matchDataUrl,
     });
   }
@@ -2271,7 +2303,7 @@ const renderShareIndicators = () => {
       class='share-indicator ${index === activeShareSlideIndex ? 'is-active' : ''}'
       type='button'
       data-share-index='${index}'
-      aria-label='查看第 ${index + 1} 张：${slide.title}'
+      aria-label='${L('result.shareSlideAriaTpl')(index + 1, slide.title)}'
       aria-pressed='${index === activeShareSlideIndex ? 'true' : 'false'}'
     ></button>
   `).join('');
@@ -2416,12 +2448,13 @@ const autoOpenShare = async (computed) => {
 const catalogBadges = (profile, selfId, needId) => {
 
   const badges = [];
-  if (profile.id === selfId) badges.push('<span class="catalog-flag self">你自己</span>');
-  if (profile.id === needId) badges.push('<span class="catalog-flag need">适合你</span>');
+  if (profile.id === selfId) badges.push(`<span class="catalog-flag self">${L('result.catalogBadgeSelf')}</span>`);
+  if (profile.id === needId) badges.push(`<span class="catalog-flag need">${L('result.catalogBadgeNeed')}</span>`);
   return badges.join('');
 };
 
 const catalogHtml = (profile, selfId, needId) => {
+  const lp = I18N.localizeProfile(profile);
   const isSelf = profile.id === selfId;
   const isNeed = profile.id === needId;
   const cardClass = isSelf && isNeed ? 'catalog-card is-double-active' : isSelf || isNeed ? 'catalog-card is-active' : 'catalog-card';
@@ -2431,7 +2464,7 @@ const catalogHtml = (profile, selfId, needId) => {
     <a
       class='${cardClass} profile-card-link'
       href='${profileDetailHref(profile.id, 'result')}'
-      aria-label='查看 ${profile.name} 人格详情'
+      aria-label='${L('result.catalogCardAriaTpl')(lp.name)}'
       style='--card-accent:${profile.accent}; --card-soft:${profile.soft};'
     >
       <span class='catalog-card-foil' aria-hidden='true'></span>
@@ -2440,27 +2473,28 @@ const catalogHtml = (profile, selfId, needId) => {
       </div>
       <div class='catalog-card-copy'>
         <div class='catalog-name-row'>
-          <h3>${profile.name}</h3>
+          <h3>${lp.name}</h3>
           <span class='catalog-flag rarity ${rarityLabel.toLowerCase()}'>${rarityLabel}</span>
         </div>
         <div class='catalog-flag-row'>
           ${catalogBadges(profile, selfId, needId)}
         </div>
       </div>
-      <p>${profile.description}</p>
+      <p>${lp.description}</p>
       <div class='tag-row compact'>
-        ${profile.tags.slice(0, 3).map((tag) => `<span>${tag}</span>`).join('')}
+        ${lp.tags.slice(0, 3).map((tag) => `<span>${tag}</span>`).join('')}
       </div>
       <div class='catalog-card-footer'>
-        <span class='profile-link-hint'>查看人格详情 →</span>
+        <span class='profile-link-hint'>${L('index.cardHint')}</span>
       </div>
     </a>
   `;
 };
 
 
-const renderComputedView = (computed) => {
-  if (!computed?.selfProfile || !computed?.needProfile) return;
+const renderComputedView = (incoming) => {
+  if (!incoming?.selfProfile || !incoming?.needProfile) return;
+  const computed = I18N.formatComputedCopy(incoming);
 
   resultEmpty?.classList.add('hidden');
   resultView?.classList.remove('hidden');
@@ -2469,7 +2503,11 @@ const renderComputedView = (computed) => {
   renderResultHeroCast(computed.selfProfile, computed.needProfile);
   const selfRarityLabel = getProfileRarityLabel(computed.selfProfile?.id);
   const needRarityLabel = getProfileRarityLabel(computed.needProfile?.id);
-  const ownerHeadingSummary = `恭喜你，测出来你是属于稀有度${selfRarityLabel}的${computed.selfProfile?.name}型恋爱人格，和你最匹配的是稀有度${needRarityLabel}的${computed.needProfile?.name}型恋爱人格。`;
+  const sp = I18N.localizeProfile(computed.selfProfile);
+  const np = I18N.localizeProfile(computed.needProfile);
+  const ownerHeadingSummary = I18N.getLocale() === 'en'
+    ? L('shareCard.ownerSummaryTpl')(selfRarityLabel, sp.name, needRarityLabel, np.name)
+    : `恭喜你，测出来你是属于稀有度${selfRarityLabel}的${computed.selfProfile?.name}型恋爱人格，和你最匹配的是稀有度${needRarityLabel}的${computed.needProfile?.name}型恋爱人格。`;
   formulaSummary.textContent = computed.formulaSummary;
 
   if (computed.fromLinkSnapshot) {
@@ -2484,8 +2522,8 @@ const renderComputedView = (computed) => {
     }
   }
 
-  const selfPanelTitle = computed.fromLinkSnapshot ? 'Ta 的恋爱人格' : '你的恋爱人格';
-  const needPanelTitle = computed.fromLinkSnapshot ? '和 Ta 最匹配的类型' : '最和你匹配的类型';
+  const selfPanelTitle = computed.fromLinkSnapshot ? L('result.selfPanelTa') : L('result.selfPanel');
+  const needPanelTitle = computed.fromLinkSnapshot ? L('result.needPanelTa') : L('result.needPanel');
   selfResult.innerHTML = panelHtml(selfPanelTitle, computed.selfProfile, computed.selfConfidence, 'self');
   needResult.innerHTML = panelHtml(needPanelTitle, computed.needProfile, computed.needConfidence, 'need');
 
@@ -2495,12 +2533,12 @@ const renderComputedView = (computed) => {
   needResult.style.background = panelPalette.match.background;
   needResult.style.borderColor = panelPalette.match.border;
 
-  resultTags.innerHTML = computed.resultTags.map((tag) => `<span>${tag}</span>`).join('');
+  resultTags.innerHTML = [...sp.tags.slice(0, 2), ...np.tags.slice(0, 2)].map((tag) => `<span>${tag}</span>`).join('');
   resultNote.textContent = computed.note;
 
   if (resultCatalogIntro) {
     const profileCount = Object.keys(profiles).length;
-    resultCatalogIntro.textContent = `下面这${profileCount}个类型，既可能是你自己，也可能是最和你匹配的恋人类型；点开卡片还能继续看完整详情。`;
+    resultCatalogIntro.textContent = L('result.catalogIntroTpl')(profileCount);
   }
 
   if (computed.fromLinkSnapshot) {
@@ -2544,7 +2582,7 @@ const handleShareButtonPreview = async (button, originalText, variant = 'self') 
   if (!lastComputed || !button) return;
 
   button.disabled = true;
-  setFloatingButtonLabel(button, '生成中...');
+  setFloatingButtonLabel(button, L('result.shareGenerating'));
   try {
     if (variant === 'match') {
       await openMatchSharePreview(lastComputed);
@@ -2553,24 +2591,24 @@ const handleShareButtonPreview = async (button, originalText, variant = 'self') 
     }
   } catch (error) {
     console.error(`Failed to open ${variant} share preview:`, error);
-    setFloatingButtonLabel(button, '生成失败，请重试');
+    setFloatingButtonLabel(button, L('result.shareFailed'));
     window.setTimeout(() => {
       setFloatingButtonLabel(button, originalText);
     }, 1600);
   } finally {
     button.disabled = false;
-    if (button.querySelector('.floating-share-label')?.textContent === '生成中...') {
+    if (button.querySelector('.floating-share-label')?.textContent === L('result.shareGenerating')) {
       setFloatingButtonLabel(button, originalText);
     }
   }
 };
 
 shareButton?.addEventListener('click', async () => {
-  await handleShareButtonPreview(shareButton, '分享我的画像', 'self');
+  await handleShareButtonPreview(shareButton, L('result.shareSelf'), 'self');
 });
 
 matchShareButton?.addEventListener('click', async () => {
-  await handleShareButtonPreview(matchShareButton, '我的匹配对象', 'match');
+  await handleShareButtonPreview(matchShareButton, L('result.shareMatch'), 'match');
 });
 
 
@@ -2623,6 +2661,72 @@ document.addEventListener('keydown', (event) => {
 restartButton?.addEventListener('click', clearDataAndRestart);
 
 bindShareGalleryCarouselPause();
+
+const applyResultPageChrome = () => {
+  document.title = L('result.docTitle');
+  document.querySelector('meta[name="description"]')?.setAttribute('content', L('result.metaDesc'));
+  document.querySelector('.brand')?.setAttribute('aria-label', L('result.brandAria'));
+  document.querySelector('.brand')?.setAttribute('href', I18N.withLang('./index.html'));
+  document.querySelector('.topbar-actions')?.setAttribute('aria-label', L('common.topbarNavAria'));
+  document.querySelectorAll('.topbar-actions .ghost-button, .topbar-actions .topbar-link').forEach((el) => {
+    if (el.id === 'restart-result') {
+      el.textContent = L('result.restart');
+      return;
+    }
+    const href = el.getAttribute('href') || '';
+    if (href.includes('index.html')) {
+      el.textContent = L('common.home');
+      el.setAttribute('href', I18N.withLang('./index.html'));
+    }
+    if (href.includes('quiz.html')) {
+      el.textContent = L('common.quiz');
+      el.setAttribute('href', I18N.withLang('./quiz.html'));
+    }
+  });
+  const eq = document.querySelector('#result-empty .primary-button');
+  const eh = document.querySelector('#result-empty .secondary-button');
+  if (eq) {
+    eq.textContent = L('result.ctaQuiz');
+    eq.setAttribute('href', I18N.withLang('./quiz.html'));
+  }
+  if (eh) {
+    eh.textContent = L('result.ctaHome');
+    eh.setAttribute('href', I18N.withLang('./index.html'));
+  }
+  if (resultHeadingSummary && resultView?.classList.contains('hidden')) {
+    resultHeadingSummary.textContent = L('result.headingLead');
+  }
+  const insightH3 = document.querySelectorAll('.result-insights .info-card h3');
+  if (insightH3[0]) insightH3[0].textContent = L('result.insightTags');
+  if (insightH3[1]) insightH3[1].textContent = L('result.insightNote');
+  const catEyebrow = document.querySelector('#result-catalog-section .eyebrow');
+  const catH2 = document.querySelector('#result-catalog-section .section-heading h2');
+  if (catEyebrow) catEyebrow.textContent = L('result.catalogEyebrow');
+  if (catH2) catH2.textContent = L('result.catalogH2');
+  const shareTipEl = document.querySelector('.share-tip');
+  if (shareTipEl) shareTipEl.textContent = L('result.shareTip');
+  shareGallery?.setAttribute('aria-label', L('result.shareGalleryAria'));
+  shareIndicators?.setAttribute('aria-label', L('result.shareIndicatorsAria'));
+  shareBackdrop?.setAttribute('aria-label', L('result.shareModalClose'));
+  shareClose?.setAttribute('aria-label', L('result.shareModalClose'));
+  if (sharePrevButton) sharePrevButton.textContent = L('result.sharePrev');
+  if (shareNextButton) shareNextButton.textContent = L('result.shareNext');
+  setFloatingButtonLabel(shareButton, L('result.shareSelf'));
+  setFloatingButtonLabel(matchShareButton, L('result.shareMatch'));
+  shareButton?.setAttribute('aria-label', L('result.shareSelfAria'));
+  shareButton?.setAttribute('title', L('result.shareSelf'));
+  matchShareButton?.setAttribute('aria-label', L('result.shareMatchAria'));
+  matchShareButton?.setAttribute('title', L('result.shareMatch'));
+  const foot = document.querySelector('.footer.container p');
+  if (foot) {
+    foot.innerHTML = `${L('common.footerDisclaimer')}<br><span class='author-highlight'>${L('common.author')}</span>`;
+  }
+  const brandSmall = document.querySelector('.brand-copy small');
+  if (brandSmall) brandSmall.textContent = L('common.brandSmall');
+};
+
+applyResultPageChrome();
+I18N.mountLanguageSwitch();
 
 const payload = loadPayload();
 const urlParams = new URLSearchParams(window.location.search);
