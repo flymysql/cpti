@@ -196,7 +196,7 @@ const renderResultHeroCast = (selfProfile, needProfile, gender = '') => {
   resultHeroCast.innerHTML = `
     ${heroCastAvatarHtml(selfProfile, 'is-left', gender)}
     <span class='result-hero-heart' aria-hidden='true'>❤</span>
-    ${heroCastAvatarHtml(needProfile, 'is-right', gender)}
+    ${heroCastAvatarHtml(needProfile, 'is-right', matchRasterGenderForUser(gender))}
   `;
 };
 
@@ -219,6 +219,7 @@ const getConfidenceRating = (confidence = 0, min = 50, max = 70) => {
 const panelHtml = (title, profile, confidence, mode, gender = '') => {
 
   const isNeedMode = mode === 'need';
+  const avatarRasterGender = isNeedMode ? matchRasterGenderForUser(gender) : gender;
   const lp = I18N.localizeProfile(profile);
   const description = isNeedMode
     ? (I18N.getLocale() === 'en' ? I18N.taifyNeedEn(lp.description) : taifyCopy(lp.description))
@@ -237,7 +238,7 @@ const panelHtml = (title, profile, confidence, mode, gender = '') => {
   return `
     <div class='result-panel-head'>
       <span class='mini-badge'>${title}</span>
-      ${avatarHtml(profile, 'large', gender)}
+      ${avatarHtml(profile, 'large', avatarRasterGender)}
       <div class='result-panel-copy'>
         <h3>${lp.name}</h3>
         <div class='result-metrics'>
@@ -924,6 +925,12 @@ const normalizeGender = (gender = '') => {
   return 'female';
 };
 
+/** Pick -male / -female raster for the user's *match* archetype (opposite binary line from self). */
+const matchRasterGenderForUser = (rawGender = '') => {
+  const g = normalizeGender(rawGender);
+  return g === 'male' ? 'female' : 'male';
+};
+
 const getShareTargetGender = (gender = '', variant = 'self') => {
   const normalizedGender = normalizeGender(gender);
   if (variant !== 'match') return normalizedGender;
@@ -1275,7 +1282,6 @@ const generateShareImage = async (computed, options = {}) => {
 
 
   const selectedGender = normalizeGender(computed.gender);
-  const matchShareRasterGender = selectedGender === 'male' ? 'female' : 'male';
   const cardTheme = getShareCardTheme(selectedGender, themeVariant);
   const accent = cardTheme.accent;
   const primaryText = cardTheme.primaryText;
@@ -1718,7 +1724,7 @@ const generateShareImage = async (computed, options = {}) => {
       title: Sk('portraitMatch'),
       name: I18N.localizeProfile(compareProfiles.right).name,
       mode: 'need',
-      avatarSrc: resolveRasterAvatarUrl(compareProfiles.right.id, matchShareRasterGender),
+      avatarSrc: resolveRasterAvatarUrl(compareProfiles.right.id, matchRasterGenderForUser(selectedGender)),
     });
 
 
@@ -2413,7 +2419,8 @@ const catalogHtml = (profile, selfId, needId, gender = '') => {
   const cardClass = isSelf && isNeed ? 'catalog-card is-double-active' : isSelf || isNeed ? 'catalog-card is-active' : 'catalog-card';
 
   const rarityLabel = getProfileRarityLabel(profile.id);
-  const thumbSrc = resolveRasterAvatarThumbUrl(profile.id, { quizCompleted: true, userGender: gender });
+  const thumbGender = profile.id === needId ? matchRasterGenderForUser(gender) : gender;
+  const thumbSrc = resolveRasterAvatarThumbUrl(profile.id, { quizCompleted: true, userGender: thumbGender });
   return `
     <a
       class='${cardClass} profile-card-link'
