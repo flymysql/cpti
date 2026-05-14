@@ -2,7 +2,8 @@
   "name": "cpti",
   "private": true,
   "scripts": {
-    "build:avatar-thumbs": "node scripts/build-avatar-thumbs.mjs"
+    "build:avatar-thumbs": "node scripts/build-avatar-thumbs.mjs",
+    "optimize:avatars": "node scripts/optimize-avatars.mjs"
   },
   "devDependencies": {
     "sharp": "^0.33.5"

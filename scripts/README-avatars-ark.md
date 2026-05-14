@@ -33,7 +33,7 @@ node scripts/generate-avatars-ark.mjs --dry-run
 
 若显示 **Parsed 0 generation job(s)**，请确认 `--md` 指向本仓库的 `docs/avatar-prompts-pixel-full.md`，且二级标题形如 `## badboy — …`。脚本会在解析前把 **CRLF（`\r\n`）** 规范为 `\n`，避免 Windows 下切分失败。
 
-生成全尺寸 PNG 后，可在仓库根目录执行 **`npm install`** 与 **`npm run build:avatar-thumbs`**，在 `generated-avatars/thumbs/` 生成约 160px 的列表用缩略图（首页头像墙与卡片使用缩略图路径）。
+生成全尺寸 PNG 后，在仓库根目录执行 **`npm install`**，再运行 **`npm run optimize:avatars`**：将根目录与 `thumbs/` 转为 **WebP**（默认全图最长边 1024、质量 82；缩略图 128px、质量 78），并删除对应 PNG，以加快首屏加载。若之后只替换了全图、需要按新全图重打缩略图，可再执行 **`npm run build:avatar-thumbs`**（从根目录的 `.webp`/`.png` 读取，输出 `thumbs/*.webp`）。
 
 ## 4. 正式生成（会扣费）
 
@@ -47,8 +47,8 @@ export ARK_API_KEY='你的密钥'
 node scripts/generate-avatars-ark.mjs
 ```
 
-- 默认输出目录：**`generated-avatars/`**（全尺寸 PNG 可提交到仓库；根目录 `.gitignore` 仅忽略 **`node_modules/`**）。  
-- 文件名：`badboy.png`、`boundary-male.png`、`boundary-female.png` 等。  
+- 默认输出目录：**`generated-avatars/`**（API 产出为 **PNG**；提交前建议再跑 `npm run optimize:avatars` 得到站点使用的 **WebP**）。  
+- API 文件名示例：`badboy.png`、`boundary-male.png`、`boundary-female.png`；优化脚本会生成 `badboy.webp`、`boundary-male.webp` 及 `thumbs/` 下同基名的 `.webp`。  
 - 默认每条请求间隔 **2.5s**，可用 `--delay-ms` 调整。  
 - 先小规模试跑：`node scripts/generate-avatars-ark.mjs --limit 2`
 
