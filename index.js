@@ -21,6 +21,13 @@ const homeQuestionCount = document.querySelector('#home-question-count');
 const homeProfileCount = document.querySelector('#home-profile-count');
 const homeCatalogTitle = document.querySelector('#home-catalog-title');
 
+/** Matches `resolveRasterAvatarUrl` second arg for the latest home catalog render (hydration). */
+let homeCatalogAvatarGenderArg = '';
+
+const escAttr = (value) => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/"/g, '&quot;')
+  .replace(/</g, '&lt;');
 
 const samplePair = {
   self: 'lovebrain',
@@ -36,15 +43,10 @@ const avatarHtml = (profile, size = 'small', listOptions = {}) => {
     hydrateCatalogFull = false,
   } = listOptions;
   const thumbSrc = resolveRasterAvatarThumbUrl(profile.id, { quizCompleted, userGender });
-  const fullSrc = hydrateCatalogFull
-    ? resolveRasterAvatarUrl(profile.id, userGender)
-    : '';
-  const fullAttr = fullSrc
-    ? ` class="home-catalog-avatar-img" data-full-src="${String(fullSrc).replace(/&/g, '&amp;').replace(/"/g, '&quot;')}"`
-    : '';
+  const catalogImgClass = hydrateCatalogFull ? ' class="home-catalog-avatar-img"' : '';
   return `
   <div class='avatar-shell ${size}' style='--avatar-accent:${profile.accent}; --avatar-soft:${profile.soft};'>
-    <img src="${thumbSrc}" alt="${lp.name}" loading="lazy" decoding="async"${fullAttr} />
+    <img src="${escAttr(thumbSrc)}" alt="${escAttr(lp.name)}" loading="lazy" decoding="async"${catalogImgClass} />
   </div>
 `;
 };
@@ -97,6 +99,7 @@ const fullCardHtml = (profile, listOptions) => {
 
   <a
     class='catalog-card home-catalog-card profile-card-link'
+    data-profile-id='${profile.id}'
     href='${profileDetailHref(profile.id, 'home')}'
     aria-label='${L('index.cardAriaTpl')(lp.name)}'
     style='--card-accent:${profile.accent}; --card-soft:${profile.soft};'
@@ -159,6 +162,7 @@ const renderHome = () => {
   const allProfiles = Object.values(profiles);
   const completed = hasCompletedQuiz();
   const userGender = getSavedQuizGender();
+  homeCatalogAvatarGenderArg = userGender;
   const quizGenderLocked = userGender === 'male' || userGender === 'female' || userGender === 'nonbinary';
   const listOptions = { quizCompleted: quizGenderLocked, userGender };
 
@@ -214,15 +218,16 @@ const scheduleHomeCatalogAvatarHydrate = () => {
   if (!homeCatalog) return;
 
   const hydrate = () => {
-    homeCatalog.querySelectorAll('img.home-catalog-avatar-img[data-full-src]').forEach((img) => {
+    homeCatalog.querySelectorAll('a.home-catalog-card.profile-card-link[data-profile-id] img.home-catalog-avatar-img').forEach((img) => {
       if (!(img instanceof HTMLImageElement) || img.dataset.avatarHydrated === '1') return;
-      const full = img.getAttribute('data-full-src');
-      if (!full) return;
+      const link = img.closest('a[data-profile-id]');
+      const id = link?.getAttribute('data-profile-id');
+      if (!id) return;
+      const full = resolveRasterAvatarUrl(id, homeCatalogAvatarGenderArg);
       const loader = new Image();
       loader.onload = () => {
         img.src = full;
         img.dataset.avatarHydrated = '1';
-        img.removeAttribute('data-full-src');
       };
       loader.onerror = () => {
         img.dataset.avatarHydrated = 'error';
