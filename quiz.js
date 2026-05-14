@@ -103,7 +103,6 @@ const MILESTONE_TOASTS = {
 };
 
 const milestoneAnnounced = new Set();
-const chapterMicroShown = new Set();
 
 const restoreMilestoneFlags = (answers = {}) => {
   const answered = countAnswered(answers);
@@ -215,7 +214,6 @@ const clearAll = () => {
   localStorage.removeItem(STORAGE.progressKey);
   localStorage.removeItem(STORAGE.resultKey);
   milestoneAnnounced.clear();
-  chapterMicroShown.clear();
 };
 
 const optionHtml = (questionId, option, index, isSelected) => `
@@ -529,31 +527,6 @@ const showStageTransition = (completedStageIndex) => {
   });
 };
 
-const tryChapterOpeningToast = (previousAnswers) => {
-  const stageIndex = getCurrentStageIndex(state.answers);
-  const stage = stageGroups[stageIndex];
-  if (!stage) return;
-  const before = getStageAnsweredCount(stage, previousAnswers);
-  const after = getStageAnsweredCount(stage, state.answers);
-  if (before !== 0 || after !== 1) return;
-  if (chapterMicroShown.has(stage.category)) return;
-
-  window.setTimeout(() => {
-    if (stageToast?.classList.contains('is-visible')) return;
-    if (chapterMicroShown.has(stage.category)) return;
-    chapterMicroShown.add(stage.category);
-    const copy = getStageCopy(stage.category);
-    if (!copy) return;
-    showStageToastMessage({
-      kicker: '章节开幕',
-      title: copy.title,
-      copy: copy.intro,
-      duration: 3600,
-      micro: true,
-    });
-  }, 260);
-};
-
 const tryAnnounceMilestone = () => {
   const answered = countAnswered(state.answers);
   const total = questions.length;
@@ -587,14 +560,12 @@ const syncStageJourney = ({ previousCompletedStageIndex = getCompletedStageIndex
 
 
 const applyAnswerChange = (updater) => {
-  const previousAnswers = { ...state.answers };
   const previousCompletedStageIndex = getCompletedStageIndex(state.answers);
   updater();
   saveProgress();
   renderQuestions();
   updateSummary();
   syncStageJourney({ previousCompletedStageIndex, triggeredByAnswer: true });
-  tryChapterOpeningToast(previousAnswers);
   tryAnnounceMilestone();
 };
 
