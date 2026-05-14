@@ -13,7 +13,7 @@
     <title>CPTI | 结果页</title>
     <meta
       name='description'
-      content='CPTI 独立结果页，用于展示你的恋爱人格、最和你匹配的类型，以及完整 26 型共享人格图鉴。'
+      content='CPTI 结果页：展示你的恋爱人格、最匹配类型与完整人格图鉴；支持通过链接分享同一配方预览。'
     />
 
     <link rel='preconnect' href='https://fonts.googleapis.com' />
@@ -53,8 +53,8 @@
         </section>
 
         <section id='result-empty' class='panel-card empty-state'>
-          <h2>还没有可展示的结果</h2>
-          <p>先去测试页做完题，再回来这里看完整结果。</p>
+          <h2 id='result-empty-title'>还没有可展示的结果</h2>
+          <p id='result-empty-copy'>先去测试页做完题，或让朋友发你带参数的分享链接。</p>
           <div class='hero-actions compact'>
             <a class='primary-button' href='./quiz.html'>去做题</a>
             <a class='secondary-button' href='./index.html'>返回首页</a>
@@ -85,10 +85,19 @@
               <p id='result-note'></p>
             </article>
             <article class='panel-card info-card'>
-              <h3>分享文案</h3>
+              <h3>分享文案与链接</h3>
               <p id='share-copy'></p>
-              <div class='hero-actions compact'>
-                <button class='secondary-button compact-button' type='button' id='copy-result'>复制文案</button>
+              <p class='share-link-hint' id='share-link-hint' hidden>当前页地址即为可分享链接，复制后发给好友即可打开同一配方。</p>
+              <div class='hero-actions compact share-action-row'>
+                <button class='secondary-button compact-button' type='button' id='copy-result'>复制完整文案</button>
+                <button class='secondary-button compact-button' type='button' id='copy-result-link'>复制结果链接</button>
+                <button class='primary-button compact-button' type='button' id='web-share-result'>系统分享…</button>
+              </div>
+              <div class='share-template-grid' role='group' aria-label='按场景复制短文案'>
+                <span class='share-template-label'>多模板复制</span>
+                <button class='ghost-button compact-button share-template-button' type='button' data-share-template='short'>朋友圈短句</button>
+                <button class='ghost-button compact-button share-template-button' type='button' data-share-template='dm'>私聊版</button>
+                <button class='ghost-button compact-button share-template-button' type='button' data-share-template='xhs'>小红书标题+正文</button>
               </div>
             </article>
 
@@ -121,7 +130,7 @@
             <div class='section-heading narrow'>
               <span class='eyebrow'>完整人格图鉴</span>
               <h2>同一套人格列表，从两个角度命中你</h2>
-              <p>下面这26个类型，既可能是你自己，也可能是最和你匹配的恋人类型；点开卡片还能继续看完整详情。</p>
+              <p id='result-catalog-intro'>下面这26个类型，既可能是你自己，也可能是最和你匹配的恋人类型；点开卡片还能继续看完整详情。</p>
 
 
             </div>

@@ -9460,6 +9460,82 @@ const getQuestionWeight = (question, mode = 'self') => {
 
   const getProfileEaseRating = (id = '') => easePreset.get(id) || 3;
 
+  const buildComputedFromPair = ({
+    selfId = '',
+    needId = '',
+    gender = '',
+    selfConfidence,
+    needConfidence,
+    fromLinkSnapshot = false,
+  } = {}) => {
+    const selfProfile = profiles[selfId];
+    const needProfile = profiles[needId];
+    if (!selfProfile || !needProfile) return null;
+    const sc = Number.isFinite(selfConfidence)
+      ? Math.min(99, Math.max(50, Math.round(selfConfidence)))
+      : 63;
+    const nc = Number.isFinite(needConfidence)
+      ? Math.min(99, Math.max(50, Math.round(needConfidence)))
+      : 63;
+    const genderNorm = gender === 'male' || gender === 'female' || gender === 'nonbinary' ? gender : '';
+    return {
+      zodiac: '',
+      mbti: '',
+      gender: genderNorm,
+      answeredCount: 0,
+      totalQuestions: questions.length,
+      selfProfile,
+      needProfile,
+      selfConfidence: sc,
+      needConfidence: nc,
+      formulaTitle: `${selfProfile.name} vs ${needProfile.name}`,
+      formulaSummary: `你在关系里更像「${selfProfile.name}」：${selfProfile.note} 而最和你匹配的，往往是「${needProfile.name}」这种类型：${taifyCopy(needProfile.note)}`,
+      resultTags: [...selfProfile.tags.slice(0, 2), ...needProfile.tags.slice(0, 2)],
+      note: '每个人表达爱的方式不同，而舒服的关系，通常来自能理解你、也能接住你的人。',
+      shareCopy: `我在 CPTI 测出来是「${selfProfile.name}」，最和我匹配的类型是「${needProfile.name}」。${selfProfile.note} ${taifyCopy(needProfile.needNote || needProfile.note)}`,
+      fromLinkSnapshot,
+    };
+  };
+
+  const parseResultLinkParams = (searchString = '') => {
+    const raw = typeof searchString === 'string' && searchString.startsWith('?')
+      ? searchString.slice(1)
+      : searchString;
+    const params = new URLSearchParams(raw || '');
+    const selfId = params.get('s') || params.get('self') || '';
+    const needId = params.get('n') || params.get('need') || '';
+    if (!selfId || !needId) return null;
+    const genderRaw = params.get('g') || params.get('gender') || '';
+    const genderNorm = genderRaw === 'male' || genderRaw === 'female' || genderRaw === 'nonbinary' ? genderRaw : '';
+    const parseConf = (value) => {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : undefined;
+    };
+    return buildComputedFromPair({
+      selfId,
+      needId,
+      gender: genderNorm,
+      selfConfidence: parseConf(params.get('sc')),
+      needConfidence: parseConf(params.get('nc')),
+      fromLinkSnapshot: true,
+    });
+  };
+
+  const buildResultQueryString = (computed) => {
+    if (!computed?.selfProfile?.id || !computed?.needProfile?.id) return '';
+    const params = new URLSearchParams();
+    params.set('s', computed.selfProfile.id);
+    params.set('n', computed.needProfile.id);
+    if (computed.gender) params.set('g', computed.gender);
+    if (Number.isFinite(computed.selfConfidence)) {
+      params.set('sc', String(Math.round(computed.selfConfidence)));
+    }
+    if (Number.isFinite(computed.needConfidence)) {
+      params.set('nc', String(Math.round(computed.needConfidence)));
+    }
+    return params.toString();
+  };
+
   window.CPTI_DATA = {
 
 
@@ -9473,6 +9549,9 @@ const getQuestionWeight = (question, mode = 'self') => {
     genderLabels,
     countAnswered,
     calculateResults,
+    buildComputedFromPair,
+    parseResultLinkParams,
+    buildResultQueryString,
     getProfileRarityLabel,
     getProfileRarityRating,
     getProfileEaseRating,
