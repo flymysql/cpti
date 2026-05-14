@@ -45,7 +45,6 @@ const resultCatalogIntro = document.querySelector('#result-catalog-intro');
 const resultPageTitle = document.querySelector('#result-page-title');
 const resultHeroEyebrow = document.querySelector('#result-hero-eyebrow');
 const resultCatalogSection = document.querySelector('#result-catalog-section');
-const floatingQuizCta = document.querySelector('#floating-quiz-cta');
 
 const DEFAULT_RESULT_HEADING = '你的恋爱人格配方';
 const DEFAULT_HERO_EYEBROW = '你的 CPTI 配方';
@@ -58,7 +57,6 @@ const resetShareViewerChrome = () => {
   resultCatalogSection?.classList.remove('hidden');
   shareButton?.classList.remove('hidden');
   matchShareButton?.classList.remove('hidden');
-  floatingQuizCta?.classList.add('hidden');
   restartButton?.classList.remove('hidden');
   document.body.classList.remove('is-share-viewer');
 };
@@ -70,7 +68,6 @@ const applyShareViewerChrome = () => {
   resultCatalogSection?.classList.add('hidden');
   shareButton?.classList.add('hidden');
   matchShareButton?.classList.add('hidden');
-  floatingQuizCta?.classList.remove('hidden');
   restartButton?.classList.add('hidden');
   document.body.classList.add('is-share-viewer');
 };
@@ -2520,7 +2517,11 @@ const renderComputedView = (computed) => {
   activeShareSlideIndex = 0;
   shareAssetCache = null;
   shareAssetPromises = null;
-  floatingShareActions?.classList.remove('hidden');
+  if (computed.fromLinkSnapshot) {
+    floatingShareActions?.classList.add('hidden');
+  } else {
+    floatingShareActions?.classList.remove('hidden');
+  }
 
   if (!computed.fromLinkSnapshot) {
     syncCanonicalUrl(computed);
