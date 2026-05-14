@@ -549,6 +549,87 @@ const drawStarStyled = (ctx, cx, cy, outerRadius, innerRadius, options = {}) => 
   ctx.restore();
 };
 
+const drawTcgCornerBrackets = (ctx, x, y, w, h, options = {}) => {
+  const {
+    stroke = 'rgba(16, 18, 42, 0.88)',
+    highlight = 'rgba(255, 224, 196, 0.55)',
+    len = 30,
+    lw = 3,
+  } = options;
+  ctx.save();
+  ctx.lineCap = 'square';
+  ctx.lineJoin = 'miter';
+  const corners = [
+    [x, y, 1, 0, 0, 1],
+    [x + w, y, -1, 0, 0, 1],
+    [x, y + h, 1, 0, 0, -1],
+    [x + w, y + h, -1, 0, 0, -1],
+  ];
+  corners.forEach(([cx, cy, sx, sy, ex, ey]) => {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + len * sx, cy + len * sy);
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + len * ex, cy + len * ey);
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = lw;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + len * sx, cy + len * sy);
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + len * ex, cy + len * ey);
+    ctx.strokeStyle = highlight;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+  ctx.restore();
+};
+
+const drawTcgWatermark = (ctx, text, cx, cy, rotate, alpha = 0.06) => {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rotate);
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = '#120a22';
+  ctx.font = '800 46px Outfit, "Noto Sans SC", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, 0, 0);
+  ctx.restore();
+};
+
+const drawTcgStatPlate = (ctx, x, y, w, h, {
+  label,
+  value,
+  sub,
+  fill,
+  stroke,
+  primary,
+  muted,
+  accent,
+}) => {
+  drawPixelPanel(ctx, x, y, w, h, {
+    fill,
+    stroke,
+    border: 5,
+    shadow: 'rgba(0, 0, 0, 0.14)',
+    shadowOffsetX: 3,
+    shadowOffsetY: 5,
+  });
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = '600 12px "Noto Sans SC", sans-serif';
+  ctx.fillStyle = muted;
+  ctx.fillText(label, x + w / 2, y + 22);
+  ctx.font = '800 26px Outfit, "Noto Sans SC", sans-serif';
+  ctx.fillStyle = primary;
+  ctx.fillText(String(value), x + w / 2, y + 54);
+  ctx.font = '600 11px "Noto Sans SC", sans-serif';
+  ctx.fillStyle = accent;
+  ctx.fillText(sub, x + w / 2, y + 74);
+};
+
 const getEaseRating = (profile) => {
   const id = profile?.id || '';
   return getProfileEaseRating(id);
@@ -1079,8 +1160,8 @@ const generateShareImage = async (computed, options = {}) => {
   await document.fonts?.ready;
 
   const {
-    subtitleText = '你的恋爱人格角色卡',
-    footerText = '你已解锁自己的恋爱人格人物卡 · 长按保存分享',
+    subtitleText = '恋战 TCG · 出战角色卡',
+    footerText = '长按保存这张「恋爱角色卡」分享到群聊或朋友圈 · 仅供娱乐',
     themeVariant = 'self',
     compareProfiles = null,
     qrTargetUrl: qrTargetUrlOption,
@@ -1146,6 +1227,7 @@ const generateShareImage = async (computed, options = {}) => {
   const tags = (selfProfile.tags || []).slice(0, 4);
   const easeRating = getEaseRating(selfProfile);
   const rarityRating = getRarityRating(selfProfile, themeVariant === 'match' ? 'need' : 'self');
+  const rarityLabelCard = getRarityLabel(selfProfile);
   const easePanelHeight = 78;
   const rarityPanelHeight = 78;
 
@@ -1331,7 +1413,20 @@ const generateShareImage = async (computed, options = {}) => {
   ctx.font = `${subtitleFontSize}px "Noto Sans SC", sans-serif`;
   const subtitleLines = getLines(ctx, subtitleText, portraitWidth - 88);
   const introLines = getLines(ctx, introText, contentWidth);
-  const skillLines = getLines(ctx, skillText, contentWidth);
+  const skillLinesRaw = getLines(ctx, skillText, contentWidth);
+  const skillLines = skillLinesRaw.slice(0, 5);
+
+  ctx.font = '600 16px "Noto Sans SC", sans-serif';
+  const typeLineFull = `${selfProfile.abbr || '—'}｜${rarityLabelCard} 稀有 · 恋爱出战单位`;
+  const typeLines = getLines(ctx, typeLineFull, portraitWidth - 36);
+  const tcgTypeHeight = typeLines.length * 22 + 10;
+  const tcgBattleHeight = 90;
+  const flavorPreview = (selfProfile.note || '').trim().slice(0, 80);
+  ctx.font = `${bodyFontSize}px "Noto Sans SC", sans-serif`;
+  const flavorLines = flavorPreview
+    ? getLines(ctx, `风味：${flavorPreview}`, contentWidth - 4).slice(0, 2)
+    : [];
+  const flavorBlockHeight = flavorLines.length ? 16 + flavorLines.length * 22 : 0;
 
   ctx.font = '700 18px "Noto Sans SC", sans-serif';
   const chipRows = [];
@@ -1365,7 +1460,10 @@ const generateShareImage = async (computed, options = {}) => {
     nameHeight +
     10 +
     subtitleHeight +
-    20 +
+    tcgTypeHeight +
+    tcgBattleHeight +
+    flavorBlockHeight +
+    16 +
     statHeight +
     18 +
     easePanelHeight +
@@ -1437,6 +1535,14 @@ const generateShareImage = async (computed, options = {}) => {
     ctx.restore();
   }
 
+  const cardInsetRadius = Math.max(14, Math.min(26, cardWidth * 0.06));
+  ctx.save();
+  drawRoundedRect(ctx, cardX + 8, cardY + 8, cardWidth - 16, cardHeight - 16, cardInsetRadius);
+  ctx.strokeStyle = 'rgba(255, 214, 150, 0.58)';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+  ctx.restore();
+
 
   let cursorY = cardY + cardPadding;
 
@@ -1444,7 +1550,7 @@ const generateShareImage = async (computed, options = {}) => {
   drawPixelBadge(ctx, {
     x: cardX + cardPadding,
     y: headerY,
-    text: 'CPTI 恋爱人格卡',
+    text: 'LOVE DECK // 恋爱扩充包',
 
     fill: cardTheme.headerFill,
     stroke: cardTheme.headerStroke,
@@ -1457,7 +1563,7 @@ const generateShareImage = async (computed, options = {}) => {
   drawPixelBadge(ctx, {
     x: cardX + cardWidth - cardPadding,
     y: headerY,
-    text: cardTheme.roleLabel,
+    text: `${rarityLabelCard} 稀有`,
     fill: cardTheme.roleFill,
     stroke: cardTheme.roleStroke,
     textColor: cardTheme.roleText,
@@ -1572,7 +1678,68 @@ const generateShareImage = async (computed, options = {}) => {
     cursorY += subtitleLineHeight;
   });
 
-  cursorY += 16;
+  cursorY += 8;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = '600 16px "Noto Sans SC", sans-serif';
+  ctx.fillStyle = mutedText;
+  typeLines.forEach((line) => {
+    ctx.fillText(line, cardX + cardWidth / 2, cursorY + 16);
+    cursorY += 22;
+  });
+  cursorY += 6;
+
+  const atk = 820 + rarityRating * 210 + easeRating * 45;
+  const def = 700 + (6 - easeRating) * 120;
+  const bond = Math.min(9999, Math.round((Number(computed.selfConfidence) || 63) * 38 + rarityRating * 95));
+  const colGap = 10;
+  const colW = (portraitWidth - colGap * 2) / 3;
+  const rowX0 = cardX + cardPadding;
+  drawTcgStatPlate(ctx, rowX0, cursorY, colW, tcgBattleHeight, {
+    label: '心动 ATK',
+    value: atk,
+    sub: '进攻型甜度',
+    fill: cardTheme.panelFill,
+    stroke: cardTheme.panelStroke,
+    primary: primaryText,
+    muted: mutedText,
+    accent,
+  });
+  drawTcgStatPlate(ctx, rowX0 + colW + colGap, cursorY, colW, tcgBattleHeight, {
+    label: '防线 DEF',
+    value: def,
+    sub: '情绪护甲',
+    fill: cardTheme.panelFill,
+    stroke: cardTheme.panelStroke,
+    primary: primaryText,
+    muted: mutedText,
+    accent,
+  });
+  drawTcgStatPlate(ctx, rowX0 + (colW + colGap) * 2, cursorY, colW, tcgBattleHeight, {
+    label: '羁绊 LINK',
+    value: bond,
+    sub: '命中感换算值',
+    fill: cardTheme.panelFill,
+    stroke: cardTheme.panelStroke,
+    primary: primaryText,
+    muted: mutedText,
+    accent,
+  });
+  cursorY += tcgBattleHeight + 10;
+
+  if (flavorLines.length) {
+    ctx.textAlign = 'left';
+    ctx.font = `italic 15px "Noto Sans SC", sans-serif`;
+    ctx.fillStyle = secondaryText;
+    let fy = cursorY + 18;
+    flavorLines.forEach((line) => {
+      ctx.fillText(line, cardX + cardPadding + 8, fy);
+      fy += 22;
+    });
+    cursorY += flavorBlockHeight;
+  }
+
+  cursorY += 12;
   const statGap = 16;
   const statWidth = (portraitWidth - statGap) / 2;
   const statY = cursorY;
@@ -1580,8 +1747,8 @@ const generateShareImage = async (computed, options = {}) => {
   const statX2 = statX1 + statWidth + statGap;
 
   [
-    { x: statX1, label: 'CARD ID', value: cardIdText },
-    { x: statX2, label: '命中率', value: `${computed.selfConfidence}%` },
+    { x: statX1, label: '系列编号', value: cardIdText },
+    { x: statX2, label: '契合波动', value: `${computed.selfConfidence}%` },
   ].forEach(({ x, label, value }) => {
 
     drawPixelPanel(ctx, x, statY, statWidth, statHeight, {
@@ -1621,7 +1788,7 @@ const generateShareImage = async (computed, options = {}) => {
   ctx.font = pixelFontSmall;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
-  ctx.fillText('被拿下容易程度', easePanelX + 18, cursorY + 24);
+  ctx.fillText('心动抗性', easePanelX + 18, cursorY + 24);
 
   const starOuter = 12.6;
   const starInner = 6.3;
@@ -1648,7 +1815,7 @@ const generateShareImage = async (computed, options = {}) => {
   ctx.font = pixelFontSmall;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
-  ctx.fillText('恋爱关系里的稀有度', rarityPanelX + 18, cursorY + 24);
+  ctx.fillText('稀有光谱', rarityPanelX + 18, cursorY + 24);
 
   const rarityStarOuter = 12.6;
   const rarityStarInner = 6.3;
@@ -1705,7 +1872,7 @@ const generateShareImage = async (computed, options = {}) => {
     x: cardX + cardPadding,
     y: cursorY,
     width: portraitWidth,
-    title: '角色简介',
+    title: '效果说明',
     lines: introLines,
   });
 
@@ -1715,7 +1882,7 @@ const generateShareImage = async (computed, options = {}) => {
     x: cardX + cardPadding,
     y: cursorY,
     width: portraitWidth,
-    title: '关系技能',
+    title: '被动 · 恋爱技',
     lines: skillLines,
   });
 
@@ -1744,7 +1911,7 @@ const generateShareImage = async (computed, options = {}) => {
   ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = mutedText;
   ctx.font = pixelFontSmall;
-  ctx.fillText('CARD DECK // CPTI', cardX + cardPadding, footerY + 20);
+  ctx.fillText('TCG STYLE // CPTI', cardX + cardPadding, footerY + 20);
   ctx.fillStyle = primaryText;
   ctx.font = '700 24px "Noto Sans SC", sans-serif';
   ctx.fillText('CPTI 恋爱人格实验室', cardX + cardPadding, footerY + 52);
@@ -1754,7 +1921,11 @@ const generateShareImage = async (computed, options = {}) => {
   ctx.fillStyle = mutedText;
 
   ctx.font = '16px "Noto Sans SC", sans-serif';
-  ctx.fillText('cpti.cc © 兰州小红鸡', cardX + cardPadding, footerY + 126);
+  ctx.fillText('cpti.cc © 兰州小红鸡 · 非流通纪念版卡面', cardX + cardPadding, footerY + 126);
+
+  drawTcgCornerBrackets(ctx, cardX + 1, cardY + 1, cardWidth - 2, cardHeight - 2, { len: 36, lw: 3.5 });
+  drawTcgWatermark(ctx, 'CPTI', cardX + cardWidth * 0.24, cardY + portraitHeight + 120, -0.38, 0.05);
+  drawTcgWatermark(ctx, 'LOVE', cardX + cardWidth * 0.76, cardY + cardHeight * 0.55, 0.34, 0.042);
 
   return canvas.toDataURL('image/png');
 
@@ -1770,8 +1941,8 @@ const generateMatchShareImage = async (computed) => {
   };
 
   return generateShareImage(matchedComputed, {
-    subtitleText: '最和你匹配的对象卡',
-    footerText: '你正在寻找最和你匹配的对象卡 · 长按保存分享',
+    subtitleText: '恋战 TCG · 羁绊对位卡',
+    footerText: '长按保存「羁绊对位卡」· 适合发给暧昧对象对号入座（娱乐向）',
     themeVariant: 'match',
     qrTargetUrl: getResultPageShareUrl(computed),
     compareProfiles: {
