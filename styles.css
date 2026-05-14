@@ -1061,6 +1061,25 @@ main {
   background: linear-gradient(90deg, #9cc7ff, #ff9ccd, #ffd6ab);
 }
 
+.stage-floating-progress.is-milestone-pulse .stage-floating-pill {
+  animation: stageMilestonePulse 0.85s ease;
+}
+
+@keyframes stageMilestonePulse {
+  0% {
+    transform: translateY(0);
+    filter: saturate(1);
+  }
+  40% {
+    transform: translateY(-3px);
+    filter: saturate(1.25);
+  }
+  100% {
+    transform: translateY(0);
+    filter: saturate(1);
+  }
+}
+
 
 .stage-toast {
   position: fixed;
@@ -1086,6 +1105,32 @@ main {
   opacity: 1;
   transform: translate(-50%, 0) scale(1);
   pointer-events: auto;
+}
+
+.stage-toast.is-micro {
+  width: min(380px, calc(100vw - 28px));
+  padding: 12px 14px 14px;
+  border-radius: 18px;
+  box-shadow: 0 14px 28px rgba(120, 45, 80, 0.16);
+}
+
+.stage-toast.is-micro .stage-toast-inner {
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.stage-toast.is-micro .stage-toast-kicker {
+  font-size: 0.72rem;
+  padding: 4px 9px;
+}
+
+.stage-toast.is-micro strong {
+  font-size: 0.98rem;
+}
+
+.stage-toast.is-micro p {
+  font-size: 0.9rem;
+  line-height: 1.55;
 }
 
 .stage-toast-close {

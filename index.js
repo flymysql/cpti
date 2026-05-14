@@ -9,7 +9,6 @@ const sampleFormulaTitle = document.querySelector('#sample-formula-title');
 const sampleFormulaCopy = document.querySelector('#sample-formula-copy');
 const homeQuestionCount = document.querySelector('#home-question-count');
 const homeProfileCount = document.querySelector('#home-profile-count');
-const homeHeroLead = document.querySelector('#home-hero-lead');
 const homeCatalogTitle = document.querySelector('#home-catalog-title');
 
 
@@ -166,11 +165,7 @@ const renderHome = () => {
 
   if (homeProfileCount) homeProfileCount.textContent = String(allProfiles.length);
 
-  const nQ = questions.length;
   const nP = allProfiles.length;
-  if (homeHeroLead) {
-    homeHeroLead.textContent = `这是一份围绕${nP}种恋爱人格的测试。你会通过${nQ}道题目，在人格池里得到「你是谁」和「谁更适合你」。`;
-  }
   if (homeCatalogTitle) {
     homeCatalogTitle.textContent = `先认识这${nP}种恋爱人格`;
   }
