@@ -8,6 +8,8 @@ const {
   getProfileEaseRating,
   parseResultLinkParams,
   buildResultQueryString,
+  resolveRasterAvatarUrl,
+  resolveRasterAvatarThumbUrl,
 } = window.CPTI_DATA;
 
 const I18N = window.CPTI_I18N;
@@ -159,30 +161,32 @@ const setFloatingButtonLabel = (button, text) => {
   button.textContent = text;
 };
 
-const avatarHtml = (profile, size = 'large') => {
+const avatarHtml = (profile, size = 'large', gender = '') => {
   const lp = I18N.localizeProfile(profile);
+  const src = resolveRasterAvatarUrl(profile.id, gender);
   return `
 
   <div class='avatar-shell ${size}' style='--avatar-accent:${profile.accent}; --avatar-soft:${profile.soft};'>
-    <img src="${profile.avatarImage}" alt="${lp.name}" loading="lazy" />
+    <img src="${src}" alt="${lp.name}" loading="lazy" />
   </div>
 `;
 };
 
-const heroCastAvatarHtml = (profile, positionClass) => {
+const heroCastAvatarHtml = (profile, positionClass, gender = '') => {
   const lp = I18N.localizeProfile(profile);
+  const src = resolveRasterAvatarUrl(profile.id, gender);
   return `
   <div class='result-hero-character ${positionClass}'>
     <div class='result-hero-character-bob'>
       <div class='avatar-shell small result-hero-avatar' style='--avatar-accent:${profile.accent}; --avatar-soft:${profile.soft};'>
-        <img src="${profile.avatarImage}" alt="${lp.name}" loading="lazy" />
+        <img src="${src}" alt="${lp.name}" loading="lazy" />
       </div>
     </div>
   </div>
 `;
 };
 
-const renderResultHeroCast = (selfProfile, needProfile) => {
+const renderResultHeroCast = (selfProfile, needProfile, gender = '') => {
   if (!resultHeroCast) return;
   if (!selfProfile || !needProfile) {
     resultHeroCast.innerHTML = '';
@@ -191,9 +195,9 @@ const renderResultHeroCast = (selfProfile, needProfile) => {
 
   resultHeroCast.removeAttribute('hidden');
   resultHeroCast.innerHTML = `
-    ${heroCastAvatarHtml(selfProfile, 'is-left')}
+    ${heroCastAvatarHtml(selfProfile, 'is-left', gender)}
     <span class='result-hero-heart' aria-hidden='true'>❤</span>
-    ${heroCastAvatarHtml(needProfile, 'is-right')}
+    ${heroCastAvatarHtml(needProfile, 'is-right', gender)}
   `;
 };
 
@@ -213,7 +217,7 @@ const getConfidenceRating = (confidence = 0, min = 50, max = 70) => {
   return Math.max(1, Math.min(5, Math.round(1 + ratio * 4)));
 };
 
-const panelHtml = (title, profile, confidence, mode) => {
+const panelHtml = (title, profile, confidence, mode, gender = '') => {
 
   const isNeedMode = mode === 'need';
   const lp = I18N.localizeProfile(profile);
@@ -234,7 +238,7 @@ const panelHtml = (title, profile, confidence, mode) => {
   return `
     <div class='result-panel-head'>
       <span class='mini-badge'>${title}</span>
-      ${avatarHtml(profile, 'large')}
+      ${avatarHtml(profile, 'large', gender)}
       <div class='result-panel-copy'>
         <h3>${lp.name}</h3>
         <div class='result-metrics'>
@@ -1364,7 +1368,16 @@ const generateShareImage = async (computed, options = {}) => {
     return panelHeight;
   };
 
-  const drawAvatarPortrait = async ({ profile, frameX, frameY, frameSize, title, name, mode = 'self' }) => {
+  const drawAvatarPortrait = async ({
+    profile,
+    frameX,
+    frameY,
+    frameSize,
+    title,
+    name,
+    mode = 'self',
+    avatarSrc,
+  }) => {
     if (title) {
       ctx.fillStyle = mutedText;
       ctx.textAlign = 'center';
@@ -1437,7 +1450,7 @@ const generateShareImage = async (computed, options = {}) => {
     const drawX = centerX - drawSize / 2;
     const drawY = centerY - drawSize / 2 - (isComparePortrait ? 4 : 8);
     try {
-      const avatar = await loadImage(profile.avatarImage);
+      const avatar = await loadImage(avatarSrc || profile.avatarImage);
       ctx.save();
       drawRegularPolygonPath(ctx, centerX, centerY, clipRadius, SHARE_AVATAR_FRAME_SIDES);
       ctx.clip();
@@ -1758,6 +1771,7 @@ const generateShareImage = async (computed, options = {}) => {
       title: Sk('portraitSelf'),
       name: I18N.localizeProfile(compareProfiles.left).name,
       mode: 'self',
+      avatarSrc: resolveRasterAvatarUrl(compareProfiles.left.id, selectedGender),
     });
     await drawAvatarPortrait({
       profile: compareProfiles.right,
@@ -1767,6 +1781,7 @@ const generateShareImage = async (computed, options = {}) => {
       title: Sk('portraitMatch'),
       name: I18N.localizeProfile(compareProfiles.right).name,
       mode: 'need',
+      avatarSrc: resolveRasterAvatarUrl(compareProfiles.right.id, selectedGender),
     });
 
 
@@ -1785,6 +1800,7 @@ const generateShareImage = async (computed, options = {}) => {
       frameY: avatarFrameY,
       frameSize: avatarFrameSize,
       mode: 'self',
+      avatarSrc: resolveRasterAvatarUrl(selfProfile.id, selectedGender),
     });
 
   }
@@ -2453,13 +2469,14 @@ const catalogBadges = (profile, selfId, needId) => {
   return badges.join('');
 };
 
-const catalogHtml = (profile, selfId, needId) => {
+const catalogHtml = (profile, selfId, needId, gender = '') => {
   const lp = I18N.localizeProfile(profile);
   const isSelf = profile.id === selfId;
   const isNeed = profile.id === needId;
   const cardClass = isSelf && isNeed ? 'catalog-card is-double-active' : isSelf || isNeed ? 'catalog-card is-active' : 'catalog-card';
 
   const rarityLabel = getProfileRarityLabel(profile.id);
+  const thumbSrc = resolveRasterAvatarThumbUrl(profile.id, { quizCompleted: true, userGender: gender });
   return `
     <a
       class='${cardClass} profile-card-link'
@@ -2469,7 +2486,9 @@ const catalogHtml = (profile, selfId, needId) => {
     >
       <span class='catalog-card-foil' aria-hidden='true'></span>
       <div class='catalog-card-top'>
-        ${avatarHtml(profile, 'small')}
+        <div class='avatar-shell small' style='--avatar-accent:${profile.accent}; --avatar-soft:${profile.soft};'>
+          <img src="${thumbSrc}" alt="${lp.name}" loading="lazy" />
+        </div>
       </div>
       <div class='catalog-card-copy'>
         <div class='catalog-name-row'>
@@ -2500,7 +2519,7 @@ const renderComputedView = (incoming) => {
   resultView?.classList.remove('hidden');
 
   formulaTitle.textContent = computed.formulaTitle;
-  renderResultHeroCast(computed.selfProfile, computed.needProfile);
+  renderResultHeroCast(computed.selfProfile, computed.needProfile, computed.gender || '');
   const selfRarityLabel = getProfileRarityLabel(computed.selfProfile?.id);
   const needRarityLabel = getProfileRarityLabel(computed.needProfile?.id);
   const sp = I18N.localizeProfile(computed.selfProfile);
@@ -2524,8 +2543,8 @@ const renderComputedView = (incoming) => {
 
   const selfPanelTitle = computed.fromLinkSnapshot ? L('result.selfPanelTa') : L('result.selfPanel');
   const needPanelTitle = computed.fromLinkSnapshot ? L('result.needPanelTa') : L('result.needPanel');
-  selfResult.innerHTML = panelHtml(selfPanelTitle, computed.selfProfile, computed.selfConfidence, 'self');
-  needResult.innerHTML = panelHtml(needPanelTitle, computed.needProfile, computed.needConfidence, 'need');
+  selfResult.innerHTML = panelHtml(selfPanelTitle, computed.selfProfile, computed.selfConfidence, 'self', computed.gender || '');
+  needResult.innerHTML = panelHtml(needPanelTitle, computed.needProfile, computed.needConfidence, 'need', computed.gender || '');
 
   const panelPalette = getResultPanelPalette(computed.gender);
   selfResult.style.background = panelPalette.self.background;
@@ -2545,7 +2564,7 @@ const renderComputedView = (incoming) => {
     profileCatalog.innerHTML = '';
   } else {
     profileCatalog.innerHTML = Object.values(profiles)
-      .map((profile) => catalogHtml(profile, computed.selfProfile.id, computed.needProfile.id))
+      .map((profile) => catalogHtml(profile, computed.selfProfile.id, computed.needProfile.id, computed.gender || ''))
       .join('');
   }
 
