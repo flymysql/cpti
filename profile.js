@@ -3,6 +3,8 @@ const {
   getProfileRarityLabel,
   getProfileRarityRating,
   getProfileEaseRating,
+  resolveRasterAvatarUrl,
+  getSavedQuizGender,
 } = window.CPTI_DATA;
 const profileDetails = window.CPTI_PROFILE_DETAILS || {};
 const profileDetailsEn = window.CPTI_PROFILE_DETAILS_EN || {};
@@ -21,9 +23,10 @@ const sourceConfig = {
 
 const avatarHtml = (profile, size = 'large') => {
   const lp = I18N.localizeProfile(profile);
+  const src = resolveRasterAvatarUrl(profile.id, getSavedQuizGender());
   return `
   <div class='avatar-shell ${size}' style='--avatar-accent:${profile.accent}; --avatar-soft:${profile.soft};'>
-    <img src="${profile.avatarImage}" alt="${lp.name}" loading="lazy" />
+    <img src="${src}" alt="${lp.name}" loading="lazy" />
   </div>
 `;
 };

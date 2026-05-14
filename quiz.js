@@ -8,6 +8,7 @@ const {
   calculateResults,
   buildResultQueryString,
   profiles,
+  resolveRasterAvatarThumbUrl,
 } = window.CPTI_DATA;
 
 const I18N = window.CPTI_I18N;
@@ -343,11 +344,17 @@ const stageCharacterProfiles = [
   { profile: profiles.solo, positionClass: 'is-right' },
 ].filter(({ profile }) => profile);
 
-const stageAvatarHtml = (profile, className = 'stage-toast-avatar') => `
+const stageAvatarHtml = (profile, className = 'stage-toast-avatar') => {
+  const src = resolveRasterAvatarThumbUrl(profile.id, {
+    quizCompleted: Boolean(state.gender),
+    userGender: state.gender || '',
+  });
+  return `
   <div class='avatar-shell small ${className}' style='--avatar-accent:${profile.accent}; --avatar-soft:${profile.soft};'>
-    <img src='${profile.avatarImage}' alt='' loading='lazy' decoding='async' />
+    <img src='${src}' alt='' loading='lazy' decoding='async' />
   </div>
 `;
+};
 
 const renderStageCharacters = (target, avatarClassName, wrapClassName) => {
   if (!target) return;
@@ -375,6 +382,11 @@ const renderStageToastCast = () => {
 
 const renderFloatingProgressCast = () => {
   renderStageCharacters(stageFloatingCast, 'stage-floating-avatar', 'stage-floating-character');
+};
+
+const refreshStageAvatarCasts = () => {
+  renderStageToastCast();
+  renderFloatingProgressCast();
 };
 
 const getStageCopy = (category) => I18N.getStageBlock(category);
@@ -672,6 +684,7 @@ genderSelect.addEventListener('change', () => {
   syncSelectPlaceholder(genderSelect);
   saveProgress();
   updateSummary();
+  refreshStageAvatarCasts();
 });
 
 stageToastClose?.addEventListener('click', () => {

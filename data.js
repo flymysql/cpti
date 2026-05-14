@@ -9559,6 +9559,85 @@ const getQuestionWeight = (question, mode = 'self') => {
     return params.toString();
   };
 
+  /** Archetypes with a single gendered asset (matches generated-avatars/*.png naming). */
+  const RASTER_AVATAR_EXPLICIT_IDS = new Set(['badboy', 'badgirl', 'daddy', 'manmom', 'mom']);
+
+  const joinUrl = (base, file) => {
+    try {
+      return new URL(file, base).href;
+    } catch {
+      return `${base}${file}`;
+    }
+  };
+
+  const getRasterAvatarFolderHref = (subfolder = '') => {
+    try {
+      const u = new URL(`./generated-avatars/${subfolder}`, window.location.href);
+      return u.href;
+    } catch {
+      return `./generated-avatars/${subfolder}`;
+    }
+  };
+
+  const pickNeutralVariantSuffix = (userGender = '') => {
+    if (userGender === 'male') return 'male';
+    return 'female';
+  };
+
+  const listPreviewVariantSuffix = (profileId = '') => {
+    let h = 0;
+    const s = String(profileId);
+    for (let i = 0; i < s.length; i += 1) {
+      h = (h * 31 + s.charCodeAt(i)) | 0;
+    }
+    return (h >>> 0) % 2 === 0 ? 'male' : 'female';
+  };
+
+  const rasterAvatarFileName = (profileId, userGender = '') => {
+    if (RASTER_AVATAR_EXPLICIT_IDS.has(profileId)) return `${profileId}.png`;
+    return `${profileId}-${pickNeutralVariantSuffix(userGender)}.png`;
+  };
+
+  /**
+   * Full-size raster (1920) for share canvas & profile hero.
+   * @param {string} profileId
+   * @param {string} userGender 'male' | 'female' | 'nonbinary' | ''
+   */
+  const resolveRasterAvatarUrl = (profileId, userGender = '') => {
+    const base = getRasterAvatarFolderHref('');
+    return joinUrl(base, rasterAvatarFileName(profileId, userGender));
+  };
+
+  /**
+   * Thumbnail for lists / avatar wall (generated-avatars/thumbs).
+   * @param {{ quizCompleted?: boolean, userGender?: string }} options
+   */
+  const resolveRasterAvatarThumbUrl = (profileId, options = {}) => {
+    const { quizCompleted = false, userGender = '' } = options;
+    const base = getRasterAvatarFolderHref('thumbs/');
+    let file;
+    if (RASTER_AVATAR_EXPLICIT_IDS.has(profileId)) {
+      file = `${profileId}.png`;
+    } else {
+      const suf = quizCompleted ? pickNeutralVariantSuffix(userGender) : listPreviewVariantSuffix(profileId);
+      file = `${profileId}-${suf}.png`;
+    }
+    return joinUrl(base, file);
+  };
+
+  const getSavedQuizGender = () => {
+    try {
+      const raw = localStorage.getItem(STORAGE.resultKey);
+      if (!raw) return '';
+      const parsed = JSON.parse(raw);
+      const g = parsed?.gender;
+      if (g === 'male' || g === 'female' || g === 'nonbinary') return g;
+      return '';
+    } catch {
+      return '';
+    }
+  };
+
   window.CPTI_DATA = {
 
 
@@ -9579,6 +9658,10 @@ const getQuestionWeight = (question, mode = 'self') => {
     getProfileRarityRating,
     getProfileEaseRating,
     renderBrandAvatar,
+    RASTER_AVATAR_EXPLICIT_IDS,
+    resolveRasterAvatarUrl,
+    resolveRasterAvatarThumbUrl,
+    getSavedQuizGender,
   };
 })();
 
