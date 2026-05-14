@@ -1,4 +1,6 @@
 const { profiles, questions, STORAGE, getProfileRarityLabel } = window.CPTI_DATA;
+const I18N = window.CPTI_I18N;
+const L = (path) => I18N.t(path);
 
 
 const homeCatalog = document.querySelector('#home-catalog');
@@ -18,24 +20,30 @@ const samplePair = {
 };
 
 
-const avatarHtml = (profile, size = 'small') => `
+const avatarHtml = (profile, size = 'small') => {
+  const lp = I18N.localizeProfile(profile);
+  return `
   <div class='avatar-shell ${size}' style='--avatar-accent:${profile.accent}; --avatar-soft:${profile.soft};'>
-    <img src="${profile.avatarImage}" alt="${profile.name} 头像" loading="lazy" />
+    <img src="${profile.avatarImage}" alt="${lp.name}" loading="lazy" />
   </div>
 `;
+};
 
-const profileDetailHref = (id, source = 'home') => `./profile.html?id=${encodeURIComponent(id)}&from=${encodeURIComponent(source)}`;
+const profileDetailHref = (id, source = 'home') => I18N.withLang(`./profile.html?id=${encodeURIComponent(id)}&from=${encodeURIComponent(source)}`);
 
-const topbarAvatarItemHtml = (profile) => `
+const topbarAvatarItemHtml = (profile) => {
+  const lp = I18N.localizeProfile(profile);
+  return `
   <div
     class='topbar-avatar-wall-item'
     aria-hidden='true'
-    title='${profile.name}'
+    title='${lp.name}'
     style='--avatar-accent:${profile.accent}; --avatar-soft:${profile.soft};'
   >
     ${avatarHtml(profile, 'small')}
   </div>
 `;
+};
 
 const topbarAvatarRowHtml = (rowProfiles, rowIndex) => {
   const rowItems = rowProfiles.map((profile) => topbarAvatarItemHtml(profile)).join('');
@@ -62,6 +70,7 @@ const topbarAvatarWallHtml = (allProfiles, rowCount = 4) => {
 };
 
 const fullCardHtml = (profile) => {
+  const lp = I18N.localizeProfile(profile);
   const rarityLabel = getProfileRarityLabel(profile.id);
   return `
 
@@ -69,7 +78,7 @@ const fullCardHtml = (profile) => {
   <a
     class='catalog-card home-catalog-card profile-card-link'
     href='${profileDetailHref(profile.id, 'home')}'
-    aria-label='查看 ${profile.name} 人格详情'
+    aria-label='${L('index.cardAriaTpl')(lp.name)}'
     style='--card-accent:${profile.accent}; --card-soft:${profile.soft};'
   >
     <span class='catalog-card-foil' aria-hidden='true'></span>
@@ -78,16 +87,16 @@ const fullCardHtml = (profile) => {
     </div>
     <div class='catalog-card-copy'>
       <div class='catalog-name-row'>
-        <h3>${profile.name}</h3>
+        <h3>${lp.name}</h3>
         <span class='catalog-flag rarity ${rarityLabel.toLowerCase()}'>${rarityLabel}</span>
       </div>
     </div>
-    <p>${profile.note}</p>
+    <p>${lp.note}</p>
     <div class='tag-row compact'>
-      ${profile.tags.slice(0, 3).map((tag) => `<span>${tag}</span>`).join('')}
+      ${lp.tags.slice(0, 3).map((tag) => `<span>${tag}</span>`).join('')}
     </div>
     <div class='catalog-card-footer'>
-      <span class='profile-link-hint'>查看人格详情 →</span>
+      <span class='profile-link-hint'>${L('index.cardHint')}</span>
     </div>
   </a>
 `;
@@ -103,12 +112,12 @@ const lockedCardHtml = (title, copy) => `
       </div>
     </div>
     <div class='catalog-card-copy'>
-      <small class='catalog-card-series'>CPTI 隐藏卡</small>
+      <small class='catalog-card-series'>CPTI</small>
       <h3>${title}</h3>
     </div>
     <p>${copy}</p>
     <div class='catalog-card-footer'>
-      <span class='locked-hint'>完成测试即可解锁</span>
+      <span class='locked-hint'>${L('index.lockedHint')}</span>
     </div>
   </div>
 `;
@@ -149,7 +158,7 @@ const renderHome = () => {
     const previewProfiles = completed ? orderedProfiles : orderedProfiles.slice(0, 6);
     const lockedCards = completed
       ? ''
-      : `${lockedCardHtml('隐藏人格', '还有更多人格等你发掘。')}${lockedCardHtml('待解锁人格', `完成测试后解锁全部 ${allProfiles.length} 种人格。`)}`;
+      : `${lockedCardHtml(L('index.lockedTitleA'), L('index.lockedCopyA'))}${lockedCardHtml(L('index.lockedTitleB'), L('index.lockedCopyBTpl')(allProfiles.length))}`;
 
 
 
@@ -167,9 +176,72 @@ const renderHome = () => {
 
   const nP = allProfiles.length;
   if (homeCatalogTitle) {
-    homeCatalogTitle.textContent = `先认识这${nP}种恋爱人格`;
+    homeCatalogTitle.textContent = typeof L('index.catalogTitleTpl') === 'function'
+      ? L('index.catalogTitleTpl')(nP)
+      : `先认识这${nP}种恋爱人格`;
   }
 };
 
+
+const applyIndexChrome = () => {
+  document.title = L('index.docTitle');
+  document.querySelector('meta[name="description"]')?.setAttribute('content', L('index.metaDesc'));
+  document.querySelector('.brand')?.setAttribute('aria-label', L('index.brandAria'));
+  document.querySelector('.brand')?.setAttribute('href', I18N.withLang('./index.html'));
+  document.querySelector('.topbar-actions')?.setAttribute('aria-label', L('common.topbarNavAria'));
+  const brandSmall = document.querySelector('.brand-copy small');
+  if (brandSmall) brandSmall.textContent = L('common.brandSmall');
+  const heroH1 = document.querySelector('.home-hero h1');
+  if (heroH1) heroH1.innerHTML = L('index.heroH1Html');
+  const resLink = document.querySelector('.topbar-actions .topbar-link');
+  if (resLink) {
+    resLink.textContent = L('common.myResult');
+    resLink.setAttribute('href', I18N.withLang('./result.html'));
+  }
+  const heroLead = document.querySelector('#home-hero-lead');
+  if (heroLead) heroLead.textContent = L('index.heroLead');
+  const heroStart = document.querySelector('.hero-start-button span');
+  if (heroStart) heroStart.textContent = L('index.heroStart');
+  const heroStartA = document.querySelector('.hero-start-button');
+  if (heroStartA) heroStartA.setAttribute('href', I18N.withLang('./quiz.html'));
+  const catEyebrow = document.querySelector('#home-catalog-heading .eyebrow');
+  const catDesc = document.querySelector('#home-catalog-desc');
+  if (catEyebrow) catEyebrow.textContent = L('index.catalogEyebrow');
+  if (catDesc) catDesc.textContent = L('index.catalogDesc');
+  const sections = document.querySelectorAll('main > .section-block.compact-top');
+  const featSection = sections[1];
+  if (featSection) {
+    const sh = featSection.querySelector('.section-heading');
+    if (sh) {
+      const eb = sh.querySelector('.eyebrow');
+      const h2 = sh.querySelector('h2');
+      const p = sh.querySelector('p');
+      if (eb) eb.textContent = L('index.sectionEyebrow');
+      if (h2) h2.textContent = L('index.sectionH2');
+      if (p) p.textContent = L('index.sectionP');
+    }
+    const cards = featSection.querySelectorAll('.feature-card');
+    if (cards[0]) {
+      const h3 = cards[0].querySelector('h3');
+      const p = cards[0].querySelector('p');
+      if (h3) h3.textContent = L('index.f1h');
+      if (p) p.textContent = L('index.f1p');
+    }
+    if (cards[1]) {
+      const h3 = cards[1].querySelector('h3');
+      const p = cards[1].querySelector('p');
+      if (h3) h3.textContent = L('index.f2h');
+      if (p) p.textContent = L('index.f2p');
+    }
+  }
+  const foot = document.querySelector('.footer.container p');
+  if (foot) {
+    foot.innerHTML = `${L('index.footerHtml')}<br><span class='author-highlight'>${L('common.author')}</span>`;
+  }
+  document.documentElement.lang = I18N.getLocale() === 'en' ? 'en' : 'zh-CN';
+};
+
+applyIndexChrome();
+I18N.mountLanguageSwitch();
 
 renderHome();

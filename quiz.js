@@ -10,6 +10,8 @@ const {
   profiles,
 } = window.CPTI_DATA;
 
+const I18N = window.CPTI_I18N;
+const L = (path) => I18N.t(path);
 
 const quizMasonry = document.querySelector('#quiz-masonry');
 const submitButton = document.querySelector('#submit-button');
@@ -44,62 +46,6 @@ const initialState = {
   answers: {},
   zodiac: '',
   gender: '',
-};
-
-const STAGE_COPY = {
-  '探索期': {
-    title: '关卡 01｜雷达刚开机',
-    intro: '像新手村：先感受第一眼吸引力，也看看你会怎么放出信号。',
-    completion: '恭喜通关「探索期」——暧昧副本已解锁，继续点选你的真实反应就好~',
-  },
-  '心动期': {
-    title: '关卡 02｜心动条在涨',
-    intro: '试探和上头并行，像 combo 连击：关系开始往前推。',
-    completion: '心动值明显飙升！下一关会更考验「你敢不敢把喜欢说清楚」。',
-  },
-  '甜蜜期': {
-    title: '关卡 03｜热恋滤镜 ON',
-    intro: '表白、约会、热恋化学反应——选最像你的那一招。',
-    completion: '高糖阶段存档完毕～滤镜会慢慢变薄，真实相处副本要开场啦。',
-  },
-  '磨合期': {
-    title: '关卡 04｜日常里见真章',
-    intro: '距离、误会、情绪温差都会出现：你怎么拆招？',
-    completion: '磨合关通过！你们已经更像「能一起修 bug 的队友」了。',
-  },
-  '稳定期': {
-    title: '关卡 05｜长线运营',
-    intro: '价值观、表达方式、分工——把喜欢过成日常的隐藏题。',
-    completion: '稳定羁绊 +1。再往前，会碰到底线与选择的硬题哦。',
-  },
-  '冲突期': {
-    title: '关卡 06｜情绪 Boss 战',
-    intro: '冲突像放大器：沟通习惯、底线、谁先低头，一次看清。',
-    completion: '最难的波次快结束了——下一章看你如何体面收尾或翻盘。',
-  },
-  '结束期': {
-    title: '关卡 07｜终幕演出',
-    intro: '故事收尾时，你怎么对自己、也对 Ta 交代？',
-    completion: '全剧情通关！去生成你的「恋爱角色卡」吧——记得长按保存分享图。',
-  },
-};
-
-const MILESTONE_TOASTS = {
-  25: {
-    kicker: '进度 Buff',
-    title: '已完成约 25%',
-    copy: '牌组暖机完毕～后段会有几次关键抉择，选最真实的你就对了。',
-  },
-  50: {
-    kicker: '中场结算',
-    title: '过半啦！',
-    copy: '像打完上半场：喝口水，继续把直觉交给下一组题目。',
-  },
-  75: {
-    kicker: 'Boss 门前',
-    title: '约 75% 啦',
-    copy: '最后一段最考验本能反应；坚持一下，你的「命中感」会更准。',
-  },
 };
 
 const milestoneAnnounced = new Set();
@@ -165,12 +111,16 @@ const stageGroups = questions.reduce((groups, question, index) => {
 
 
 const getKindLabel = (question) => {
-  if (question.kind === 'scale4') return '单选题';
-  if (question.kind === 'multi') return `多选题 · ${question.options.length}项`;
-  if (question.kind === 'chat') return `聊天题 · ${question.options.length}选1`;
-  if (question.kind === 'rank') return `排序题 · ${question.options.length}项`;
-  if (question.kind === 'wild') return `恶搞题 · ${question.options.length}选1`;
-  return '单选题';
+  const call = (key, ...args) => {
+    const v = I18N.t(key);
+    return typeof v === 'function' ? v(...args) : v;
+  };
+  if (question.kind === 'scale4') return call('quiz.kindScale4');
+  if (question.kind === 'multi') return call('quiz.kindMulti', question.options.length);
+  if (question.kind === 'chat') return call('quiz.kindChat', question.options.length);
+  if (question.kind === 'rank') return call('quiz.kindRank', question.options.length);
+  if (question.kind === 'wild') return call('quiz.kindWild', question.options.length);
+  return call('quiz.kindScale4');
 };
 
 const findQuestion = (questionId) => questions.find((question) => question.id === questionId);
@@ -289,7 +239,7 @@ const rankHtml = (question) => {
     <div class='rank-builder'>
       <div class='rank-panel'>
         <div class='rank-panel-head'>
-          <strong>你的排序</strong>
+          <strong>${L('quiz.rankYourOrder')}</strong>
           <span>${order.length}/${question.options.length}</span>
         </div>
         <div class='rank-list'>
@@ -303,21 +253,21 @@ const rankHtml = (question) => {
             >
               <span class='rank-pill'>#${position + 1}</span>
               <span class='rank-label'>${question.options[optionIndex].label}</span>
-              <span class='rank-action'>点此撤回</span>
+              <span class='rank-action'>${L('quiz.rankTapUndo')}</span>
             </button>
           `).join('')}
           ${order.length < question.options.length ? `
             <div class='rank-slot'>
               <span class='rank-pill'>#${order.length + 1}</span>
-              <span class='rank-empty'>等待选择</span>
+              <span class='rank-empty'>${L('quiz.rankWaitingPick')}</span>
             </div>
           ` : ''}
         </div>
       </div>
       <div class='rank-panel'>
         <div class='rank-panel-head'>
-          <strong>待排序</strong>
-          <span>按重要性依次点选</span>
+          <strong>${L('quiz.rankRemaining')}</strong>
+          <span>${L('quiz.rankBankHint')}</span>
         </div>
         <div class='option-cluster rank-bank'>
           ${remaining.map(({ option, index }) => `
@@ -330,7 +280,7 @@ const rankHtml = (question) => {
             >
               ${option.label}
             </button>
-          `).join('') || `<div class='rank-finished'>已完成排序，如需调整可点上方已选项撤回。</div>`}
+          `).join('') || `<div class='rank-finished'>${L('quiz.rankFinished')}</div>`}
         </div>
       </div>
     </div>
@@ -338,22 +288,23 @@ const rankHtml = (question) => {
 };
 
 const cardHtml = (question, index) => {
+  const qd = I18N.mergeQuestionToDisplay(question);
   const selectedValue = state.answers[question.id];
   const selectedSet = question.kind === 'multi'
     ? new Set(normalizeMultiAnswer(question, selectedValue))
     : null;
   const kindText = getKindLabel(question);
   const multiTip = question.kind === 'multi'
-    ? `<span class='question-multi-tip'>可多选</span>`
+    ? `<span class='question-multi-tip'>${L('quiz.multiTip')}</span>`
     : '';
   const multiHint = question.kind === 'multi'
-    ? `<p class='question-multi-hint'>这题可多选，点击多个选项即可</p>`
+    ? `<p class='question-multi-hint'>${L('quiz.multiHint')}</p>`
     : '';
   const answerHtml = question.kind === 'rank'
-    ? rankHtml(question)
+    ? rankHtml(qd)
     : `
       <div class='option-cluster'>
-        ${question.options
+        ${qd.options
           .map((option, optionIndex) => optionHtml(
             question.id,
             option,
@@ -373,11 +324,11 @@ const cardHtml = (question, index) => {
           ${multiTip}
         </div>
       </div>
-      <div class='question-category'>${question.category}</div>
-      <h3>${question.prompt}</h3>
-      <p class='question-hint'>${question.hint}</p>
+      <div class='question-category'>${qd.category}</div>
+      <h3>${qd.prompt}</h3>
+      <p class='question-hint'>${qd.hint}</p>
       ${multiHint}
-      ${question.kind === 'chat' ? dialogueHtml(question.dialogue) : ''}
+      ${question.kind === 'chat' ? dialogueHtml(qd.dialogue) : ''}
       ${answerHtml}
     </article>
   `;
@@ -426,11 +377,7 @@ const renderFloatingProgressCast = () => {
   renderStageCharacters(stageFloatingCast, 'stage-floating-avatar', 'stage-floating-character');
 };
 
-const getStageCopy = (category) => STAGE_COPY[category] || {
-  title: category,
-  intro: '正在推进这一阶段的答题体验。',
-  completion: `你已经完成「${category}」，继续进入下一阶段吧。`,
-};
+const getStageCopy = (category) => I18N.getStageBlock(category);
 
 const getStageAnsweredCount = (stage, answers = {}) => stage.questionIds
   .map((questionId) => findQuestion(questionId))
@@ -470,7 +417,7 @@ const renderStageJourney = () => {
     : progressPercent;
 
   stageFloatingProgress.classList.toggle('is-all-done', allDone);
-  stageFloatingStage.textContent = allDone ? '全部完成' : currentCopy.title;
+  stageFloatingStage.textContent = allDone ? L('quiz.stageFloatingAllDone') : currentCopy.title;
   stageFloatingCounter.textContent = `${answered} / ${total}`;
   stageProgressFill.style.width = `${Math.min(widthPercent, 100)}%`;
   stageFloatingProgress.dataset.currentStage = currentStage.category;
@@ -548,10 +495,13 @@ const showStageTransition = (completedStageIndex) => {
   const completedStage = stageGroups[completedStageIndex];
   const nextStage = stageGroups[completedStageIndex + 1];
   const completedCopy = getStageCopy(completedStage?.category || '');
+  const nextCat = nextStage
+    ? I18N.mergeQuestionToDisplay(findQuestion(nextStage.questionIds[0])).category
+    : '';
 
   showStageToastMessage({
-    kicker: nextStage ? '关卡推进' : '全关卡通关',
-    title: nextStage ? `进入「${nextStage.category}」` : '全部关系阶段已通关',
+    kicker: nextStage ? L('quiz.stageAdvanceKicker') : L('quiz.stageAllDoneKicker'),
+    title: nextStage ? (typeof L('quiz.stageEnterTpl') === 'function' ? L('quiz.stageEnterTpl')(nextCat || nextStage.category) : nextCat) : L('quiz.stageAllStagesDone'),
     copy: completedCopy.completion,
     duration: 6200,
     micro: false,
@@ -566,7 +516,7 @@ const tryAnnounceMilestoneNow = () => {
   const ratio = answered / total;
   const pct = [25, 50, 75].find((p) => ratio >= p / 100 && !milestoneAnnounced.has(p));
   if (pct == null) return;
-  const payload = MILESTONE_TOASTS[pct];
+  const payload = I18N.getMilestoneBlock(pct);
   if (!payload) return;
   milestoneAnnounced.add(pct);
   markQuizToastShown();
@@ -609,20 +559,20 @@ const updateSummary = () => {
   const missingNumbers = isSubmitBarVisible && remaining > 0 && remaining < 3
     ? getUnansweredQuestionNumbers()
     : [];
-  const missingSuffix = missingNumbers.length ? `（未做：${missingNumbers.join('、')}）` : '';
+  const missingSuffix = missingNumbers.length ? L('quiz.summaryMissingTpl')(missingNumbers) : '';
 
   if (remaining > 0 && !hasGender) {
-    submitLabel.textContent = `还差 ${remaining} 题，且需选择性别${missingSuffix}`;
-    submitButton.textContent = '先做完题并选择性别';
+    submitLabel.textContent = `${L('quiz.summaryRemainGenderTpl')(remaining)}${missingSuffix}`;
+    submitButton.textContent = L('quiz.submitNeedQuestions');
   } else if (remaining > 0) {
-    submitLabel.textContent = `还差 ${remaining} 题${missingSuffix}`;
-    submitButton.textContent = '先做完全部题目';
+    submitLabel.textContent = `${L('quiz.summaryRemainTpl')(remaining)}${missingSuffix}`;
+    submitButton.textContent = L('quiz.submitDoQuestions');
   } else if (!hasGender) {
-    submitLabel.textContent = '请选择性别后生成结果';
-    submitButton.textContent = '请选择性别';
+    submitLabel.textContent = L('quiz.summaryNeedGenderLabel');
+    submitButton.textContent = L('quiz.submitPickGender');
   } else {
-    submitLabel.textContent = '已完成，可生成结果';
-    submitButton.textContent = '生成结果并跳转';
+    submitLabel.textContent = L('quiz.summaryReadyLabel');
+    submitButton.textContent = L('quiz.submitGenerate');
   }
 
   submitButton.disabled = remaining !== 0 || !hasGender;
@@ -644,15 +594,16 @@ if (submitBar && 'IntersectionObserver' in window) {
 const populateZodiac = () => {
 
   zodiacSelect.innerHTML = zodiacOptions
-    .map((option) => `<option value='${option}'>${option || '点击选择（非必选）'}</option>`)
+    .map((option, index) => `<option value='${option}'>${I18N.getZodiacOptionLabel(option, index)}</option>`)
     .join('');
   zodiacSelect.value = state.zodiac;
   syncSelectPlaceholder(zodiacSelect);
 };
 
 const populateGender = () => {
+  const labels = I18N.getGenderLabelMap() || genderLabels;
   genderSelect.innerHTML = genderOptions
-    .map((option) => `<option value='${option}'>${genderLabels[option]}</option>`)
+    .map((option) => `<option value='${option}'>${labels[option]}</option>`)
     .join('');
   genderSelect.value = state.gender;
   syncSelectPlaceholder(genderSelect);
@@ -729,7 +680,7 @@ stageToastClose?.addEventListener('click', () => {
 
 restartButton.addEventListener('click', () => {
 
-  const confirmed = window.confirm('确认清空当前测试进度并重新开始吗？这会删除你已选择的答案、性别和星座。');
+  const confirmed = window.confirm(L('quiz.restartConfirm'));
   if (!confirmed) return;
 
   clearAll();
@@ -768,8 +719,70 @@ submitButton.addEventListener('click', () => {
   localStorage.setItem(STORAGE.resultKey, JSON.stringify(payload));
   localStorage.setItem(STORAGE.progressKey, JSON.stringify({ answers: state.answers, zodiac: state.zodiac, gender: state.gender }));
   const qs = buildResultQueryString(result);
-  window.location.href = qs ? `./result.html?${qs}` : './result.html';
+  const params = new URLSearchParams(qs || '');
+  if (I18N.getLocale() === 'en') params.set('lang', 'en');
+  else params.delete('lang');
+  const tail = params.toString();
+  window.location.href = tail ? `./result.html?${tail}` : './result.html';
 });
+
+const applyQuizChrome = () => {
+  document.title = L('quiz.docTitle');
+  const meta = document.querySelector('meta[name="description"]');
+  if (meta) meta.setAttribute('content', L('quiz.metaDesc'));
+  document.querySelector('.brand')?.setAttribute('aria-label', L('quiz.brandAria'));
+  document.querySelector('.brand')?.setAttribute('href', I18N.withLang('./index.html'));
+  document.querySelector('.topbar-actions')?.setAttribute('aria-label', L('common.topbarNavAria'));
+  const h1 = document.querySelector('.quiz-heading h1');
+  if (h1) h1.textContent = L('quiz.h1');
+  const lead = document.querySelector('.quiz-heading p');
+  if (lead) lead.textContent = L('quiz.sub');
+  const cards = document.querySelectorAll('.quiz-toolbar .mbti-card');
+  if (cards[0]) {
+    const sl = cards[0].querySelector('.small-label');
+    const st = cards[0].querySelector('.mbti-label strong');
+    const hp = cards[0].querySelector('p');
+    if (sl) sl.textContent = L('quiz.genderEyebrow');
+    if (st) st.textContent = L('quiz.genderLabel');
+    if (hp) hp.textContent = L('quiz.genderHelp');
+  }
+  if (cards[1]) {
+    const sl = cards[1].querySelector('.small-label');
+    const st = cards[1].querySelector('.mbti-label strong');
+    const hp = cards[1].querySelector('p');
+    if (sl) sl.textContent = L('quiz.zodiacEyebrow');
+    if (st) st.textContent = L('quiz.zodiacLabel');
+    if (hp) hp.textContent = L('quiz.zodiacHelp');
+  }
+  document.querySelectorAll('.topbar-actions .topbar-link').forEach((el) => {
+    const href = el.getAttribute('href') || '';
+    if (href.includes('index.html')) {
+      el.textContent = L('common.home');
+      el.setAttribute('href', I18N.withLang('./index.html'));
+    }
+    if (href.includes('result.html')) {
+      el.textContent = L('common.result');
+      el.setAttribute('href', I18N.withLang('./result.html'));
+    }
+  });
+  if (restartButton) restartButton.textContent = L('quiz.restart');
+  const subHint = document.querySelector('.submit-bar small');
+  if (subHint) subHint.textContent = L('quiz.submitHint');
+  if (submitLabel) submitLabel.textContent = L('quiz.submitLoading');
+  if (submitButton) submitButton.textContent = L('quiz.submitIdle');
+  stageFloatingProgress?.setAttribute('aria-label', L('quiz.stageAria'));
+  stageToastClose?.setAttribute('aria-label', L('quiz.toastCloseAria'));
+  if (genderSelect) genderSelect.setAttribute('aria-label', L('quiz.genderAria'));
+  if (zodiacSelect) zodiacSelect.setAttribute('aria-label', L('quiz.zodiacAria'));
+  const foot = document.querySelector('.footer.container p');
+  if (foot) {
+    foot.innerHTML = `${L('common.footerDisclaimer')}<br><span class='author-highlight'>${L('common.author')}</span>`;
+  }
+  document.documentElement.lang = I18N.getLocale() === 'en' ? 'en' : 'zh-CN';
+};
+
+applyQuizChrome();
+I18N.mountLanguageSwitch();
 
 populateZodiac();
 populateGender();
