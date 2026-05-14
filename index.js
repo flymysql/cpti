@@ -1,4 +1,11 @@
-const { profiles, questions, STORAGE, getProfileRarityLabel } = window.CPTI_DATA;
+const {
+  profiles,
+  questions,
+  STORAGE,
+  getProfileRarityLabel,
+  resolveRasterAvatarThumbUrl,
+  getSavedQuizGender,
+} = window.CPTI_DATA;
 const I18N = window.CPTI_I18N;
 const L = (path) => I18N.t(path);
 
@@ -20,18 +27,20 @@ const samplePair = {
 };
 
 
-const avatarHtml = (profile, size = 'small') => {
+const avatarHtml = (profile, size = 'small', listOptions = {}) => {
   const lp = I18N.localizeProfile(profile);
+  const { quizCompleted = false, userGender = '' } = listOptions;
+  const src = resolveRasterAvatarThumbUrl(profile.id, { quizCompleted, userGender });
   return `
   <div class='avatar-shell ${size}' style='--avatar-accent:${profile.accent}; --avatar-soft:${profile.soft};'>
-    <img src="${profile.avatarImage}" alt="${lp.name}" loading="lazy" />
+    <img src="${src}" alt="${lp.name}" loading="lazy" />
   </div>
 `;
 };
 
 const profileDetailHref = (id, source = 'home') => I18N.withLang(`./profile.html?id=${encodeURIComponent(id)}&from=${encodeURIComponent(source)}`);
 
-const topbarAvatarItemHtml = (profile) => {
+const topbarAvatarItemHtml = (profile, listOptions) => {
   const lp = I18N.localizeProfile(profile);
   return `
   <div
@@ -40,13 +49,13 @@ const topbarAvatarItemHtml = (profile) => {
     title='${lp.name}'
     style='--avatar-accent:${profile.accent}; --avatar-soft:${profile.soft};'
   >
-    ${avatarHtml(profile, 'small')}
+    ${avatarHtml(profile, 'small', listOptions)}
   </div>
 `;
 };
 
-const topbarAvatarRowHtml = (rowProfiles, rowIndex) => {
-  const rowItems = rowProfiles.map((profile) => topbarAvatarItemHtml(profile)).join('');
+const topbarAvatarRowHtml = (rowProfiles, rowIndex, listOptions) => {
+  const rowItems = rowProfiles.map((profile) => topbarAvatarItemHtml(profile, listOptions)).join('');
   const directionClass = rowIndex % 2 === 0 ? 'is-forward' : 'is-reverse';
 
   return `
@@ -60,16 +69,16 @@ const topbarAvatarRowHtml = (rowProfiles, rowIndex) => {
 };
 
 
-const topbarAvatarWallHtml = (allProfiles, rowCount = 4) => {
+const topbarAvatarWallHtml = (allProfiles, rowCount = 4, listOptions) => {
   const perRow = Math.ceil(allProfiles.length / rowCount);
 
   return Array.from({ length: rowCount }, (_, rowIndex) => {
     const rowProfiles = allProfiles.slice(rowIndex * perRow, (rowIndex + 1) * perRow);
-    return rowProfiles.length ? topbarAvatarRowHtml(rowProfiles, rowIndex) : '';
+    return rowProfiles.length ? topbarAvatarRowHtml(rowProfiles, rowIndex, listOptions) : '';
   }).join('');
 };
 
-const fullCardHtml = (profile) => {
+const fullCardHtml = (profile, listOptions) => {
   const lp = I18N.localizeProfile(profile);
   const rarityLabel = getProfileRarityLabel(profile.id);
   return `
@@ -83,7 +92,7 @@ const fullCardHtml = (profile) => {
   >
     <span class='catalog-card-foil' aria-hidden='true'></span>
     <div class='catalog-card-top'>
-      ${avatarHtml(profile, 'small')}
+      ${avatarHtml(profile, 'small', listOptions)}
     </div>
     <div class='catalog-card-copy'>
       <div class='catalog-name-row'>
@@ -138,6 +147,8 @@ const hasCompletedQuiz = () => {
 const renderHome = () => {
   const allProfiles = Object.values(profiles);
   const completed = hasCompletedQuiz();
+  const userGender = getSavedQuizGender();
+  const listOptions = { quizCompleted: completed, userGender };
 
   if (homeCatalogHeading) {
     homeCatalogHeading.classList.remove('hidden');
@@ -162,11 +173,11 @@ const renderHome = () => {
 
 
 
-    homeCatalog.innerHTML = previewProfiles.map((profile) => fullCardHtml(profile)).join('') + lockedCards;
+    homeCatalog.innerHTML = previewProfiles.map((profile) => fullCardHtml(profile, listOptions)).join('') + lockedCards;
   }
 
   if (topbarAvatarWall) {
-    topbarAvatarWall.innerHTML = topbarAvatarWallHtml(allProfiles);
+    topbarAvatarWall.innerHTML = topbarAvatarWallHtml(allProfiles, 4, listOptions);
   }
 
 
