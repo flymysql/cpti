@@ -55,6 +55,18 @@ const defaultDetail = (profile) => ({
     ],
 });
 
+const mergeProfileDetail = (targetProfile) => {
+  const fallback = defaultDetail(targetProfile);
+  const extra = profileDetails[targetProfile.id];
+  if (!extra) return { ...fallback, friction: '', earlySignals: '' };
+  return {
+    essay: extra.essay ?? fallback.essay,
+    advice: Array.isArray(extra.advice) && extra.advice.length ? extra.advice : fallback.advice,
+    friction: extra.friction || '',
+    earlySignals: extra.earlySignals || '',
+  };
+};
+
 
 const params = new URLSearchParams(window.location.search);
 const profileId = params.get('id') || '';
@@ -68,13 +80,14 @@ const renderNotFound = () => {
 };
 
 const renderProfile = (targetProfile) => {
-  const detail = profileDetails[targetProfile.id] || defaultDetail(targetProfile);
+  const detail = mergeProfileDetail(targetProfile);
   const descriptionMeta = document.querySelector('meta[name="description"]');
 
   document.title = `CPTI | ${targetProfile.name} 人格详情`;
+  const metaBits = [detail.friction, detail.earlySignals, targetProfile.description].filter(Boolean);
   descriptionMeta?.setAttribute(
     'content',
-    `${targetProfile.name} 型人格详情页：查看这种恋爱人格在亲密关系中的表现方式、相处建议与适配节奏。`
+    `${targetProfile.name} 型恋爱人格：${metaBits[0] || targetProfile.description}`,
   );
 
   profileEmpty.classList.add('hidden');
@@ -129,6 +142,15 @@ const renderProfile = (targetProfile) => {
         <p>${targetProfile.needNote}</p>
       </article>
     </div>
+
+    ${detail.friction || detail.earlySignals ? `
+    <section class='panel-card detail-section detail-extra-radar'>
+      <span class='eyebrow'>相处小雷达</span>
+      <h2>这类人格在关系里常见的张力与早期信号</h2>
+      ${detail.friction ? `<p>${detail.friction}</p>` : ''}
+      ${detail.earlySignals ? `<p class='detail-copy'>${detail.earlySignals}</p>` : ''}
+    </section>
+    ` : ''}
 
     <section class='section-block compact-top detail-section-wrap'>
       <div class='section-heading narrow'>
