@@ -148,7 +148,8 @@ const renderHome = () => {
   const allProfiles = Object.values(profiles);
   const completed = hasCompletedQuiz();
   const userGender = getSavedQuizGender();
-  const listOptions = { quizCompleted: completed, userGender };
+  const quizGenderLocked = userGender === 'male' || userGender === 'female' || userGender === 'nonbinary';
+  const listOptions = { quizCompleted: quizGenderLocked, userGender };
 
   if (homeCatalogHeading) {
     homeCatalogHeading.classList.remove('hidden');

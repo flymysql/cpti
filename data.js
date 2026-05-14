@@ -53,15 +53,26 @@
     return (h >>> 0) % 2 === 0 ? 'male' : 'female';
   };
 
+  const hasRasterUserGenderLine = (userGender = '') => (
+    userGender === 'male' || userGender === 'female' || userGender === 'nonbinary'
+  );
+
+  const rasterVariantSuffixForProfile = (profileId, userGender = '') => (
+    hasRasterUserGenderLine(userGender)
+      ? pickNeutralVariantSuffix(userGender)
+      : listPreviewVariantSuffix(profileId)
+  );
+
   const rasterAvatarFileName = (profileId, userGender = '') => {
     if (RASTER_AVATAR_EXPLICIT_IDS.has(profileId)) return `${profileId}.png`;
-    return `${profileId}-${pickNeutralVariantSuffix(userGender)}.png`;
+    const suf = rasterVariantSuffixForProfile(profileId, userGender);
+    return `${profileId}-${suf}.png`;
   };
 
   /**
    * Full-size raster (1920) for share canvas & profile hero.
    * @param {string} profileId
-   * @param {string} userGender 'male' | 'female' | 'nonbinary' | ''
+   * @param {string} userGender When male/female/nonbinary, picks that line; otherwise stable pseudo-random male|female per profileId (same as list thumbs).
    */
   const resolveRasterAvatarUrl = (profileId, userGender = '') => {
     const base = getRasterAvatarFolderHref('');
@@ -70,7 +81,7 @@
 
   /**
    * Thumbnail for lists / avatar wall (generated-avatars/thumbs).
-   * @param {{ quizCompleted?: boolean, userGender?: string }} options
+   * @param {{ quizCompleted?: boolean, userGender?: string }} options When quizCompleted and userGender is a saved quiz line, all profiles use that line; otherwise each profile uses the same pseudo-random line as full-size URLs.
    */
   const resolveRasterAvatarThumbUrl = (profileId, options = {}) => {
     const { quizCompleted = false, userGender = '' } = options;
@@ -79,7 +90,10 @@
     if (RASTER_AVATAR_EXPLICIT_IDS.has(profileId)) {
       file = `${profileId}.png`;
     } else {
-      const suf = quizCompleted ? pickNeutralVariantSuffix(userGender) : listPreviewVariantSuffix(profileId);
+      const hasLine = hasRasterUserGenderLine(userGender);
+      const suf = quizCompleted && hasLine
+        ? pickNeutralVariantSuffix(userGender)
+        : listPreviewVariantSuffix(profileId);
       file = `${profileId}-${suf}.png`;
     }
     return joinUrl(base, file);
