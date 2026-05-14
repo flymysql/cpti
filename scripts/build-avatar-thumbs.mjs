@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Resize generated-avatars/*.png into generated-avatars/thumbs/ (square WebP + PNG fallback).
- * Default: 160px JPEG-quality WebP not used — output PNG @ 160 for broad browser support.
+ * Rebuild generated-avatars/thumbs/ from full-size rasters in generated-avatars/.
+ * Source: *.webp (preferred) or *.png. Output: WebP thumbs (AVATAR_THUMB_SIZE, default 128).
  */
 import fs from 'fs';
 import path from 'path';
@@ -12,7 +12,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const SRC = path.join(ROOT, 'generated-avatars');
 const OUT = path.join(ROOT, 'generated-avatars', 'thumbs');
-const SIZE = Number(process.env.AVATAR_THUMB_SIZE || 160);
+const SIZE = Number(process.env.AVATAR_THUMB_SIZE || 128);
+const Q = Number(process.env.AVATAR_WEBP_QUALITY_THUMB || 78);
 
 async function main() {
   if (!fs.existsSync(SRC)) {
@@ -20,19 +21,23 @@ async function main() {
     process.exit(1);
   }
   fs.mkdirSync(OUT, { recursive: true });
-  const files = fs.readdirSync(SRC).filter((f) => f.endsWith('.png'));
+  const files = fs.readdirSync(SRC).filter((f) => {
+    const l = f.toLowerCase();
+    return (l.endsWith('.webp') || l.endsWith('.png')) && !fs.statSync(path.join(SRC, f)).isDirectory();
+  });
   for (const name of files) {
     const inPath = path.join(SRC, name);
     const st = fs.statSync(inPath);
     if (!st.isFile()) continue;
-    const outPath = path.join(OUT, name);
+    const base = name.replace(/\.(png|webp)$/i, '');
+    const outPath = path.join(OUT, `${base}.webp`);
     await sharp(inPath)
       .resize(SIZE, SIZE, { fit: 'cover', position: 'centre' })
-      .png({ compressionLevel: 9 })
+      .webp({ quality: Q, effort: 6 })
       .toFile(outPath);
     console.log(outPath.replace(ROOT + path.sep, ''));
   }
-  console.log(`Done: ${files.length} thumb(s) @ ${SIZE}px`);
+  console.log(`Done: ${files.length} thumb(s) @ ${SIZE}px WebP q${Q}`);
 }
 
 main().catch((e) => {
