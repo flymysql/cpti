@@ -92,13 +92,11 @@ const SHARE_CAROUSEL_INTERVAL_MS = 5000;
 const SHARE_CAROUSEL_PAUSE_HOLD_MS = 450;
 const SHARE_AVATAR_FRAME_SIDES = 6;
 
-const getResultPageShareUrl = (computed) => {
-  const qs = buildResultQueryString(computed);
-  if (!qs) return 'https://cpti.cc/';
+const getShareQrLandingUrl = () => {
   try {
-    return new URL(`result.html?${qs}`, window.location.href).href;
+    return new URL('./index.html', window.location.href).href;
   } catch {
-    return `https://cpti.cc/result.html?${qs}`;
+    return 'https://cpti.cc/';
   }
 };
 
@@ -1242,12 +1240,11 @@ const generateShareImage = async (computed, options = {}) => {
     footerText = '长按保存「记忆卡」· 记录你的恋语瞬间（仅供娱乐）',
     themeVariant = 'self',
     compareProfiles = null,
-    qrTargetUrl: qrTargetUrlOption,
   } = options;
 
 
   const selfProfile = computed.selfProfile;
-  const qrTargetUrl = qrTargetUrlOption || getResultPageShareUrl(computed);
+  const qrTargetUrl = getShareQrLandingUrl();
   const isComparePortrait = Boolean(compareProfiles?.left && compareProfiles?.right);
   const width = 900;
   const outerPadding = 34;
@@ -2055,7 +2052,6 @@ const generateMatchShareImage = async (computed) => {
     subtitleText: '与他的角色简介',
     footerText: '长按保存「羁绊记忆卡」· 适合与 Ta 一起收藏（仅供娱乐）',
     themeVariant: 'match',
-    qrTargetUrl: getResultPageShareUrl(computed),
     compareProfiles: {
 
       left: computed.selfProfile,
