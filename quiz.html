@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang='zh-CN'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, viewport-fit=cover' />
+    <meta name='theme-color' content='#fffafb' />
+    <script>
+      // if (location.protocol === 'http:' && /(^|\.)cpti\.cc$/i.test(location.hostname)) {
+      //   location.replace(`https://${location.host}${location.pathname}${location.search}${location.hash}`);
+      // }
+    </script>
+
+    <title>CPTI | 测试页</title>
+    <meta
+      name='description'
+      content='CPTI测试页包含基于26个人格原型重写的短题卡、性别必选与星座可选辅助输入，以及独立结果页跳转。'
+
+    />
+    <link rel='preconnect' href='https://fonts.googleapis.com' />
+    <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin />
+    <link
+      href='https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;800&display=swap'
+      rel='stylesheet'
+    />
+    <link rel='stylesheet' href='./styles.css' />
+  </head>
+  <body class='page-quiz'>
+    <div class='page-shell'>
+      <div class='ambient ambient-a'></div>
+      <div class='ambient ambient-b'></div>
+
+      <header class='topbar container'>
+        <a class='brand' href='./index.html' aria-label='返回首页'>
+          <span class='brand-mark brand-mark-avatar' aria-hidden='true'></span>
+          <span class='brand-copy'>
+
+            <strong>CPTI</strong>
+            <small>恋爱人格实验室 cpti.cc</small>
+          </span>
+        </a>
+
+        <nav class='topbar-actions' aria-label='快捷入口'>
+          <a class='ghost-button topbar-link' href='./index.html'>首页</a>
+          <a class='ghost-button topbar-link' href='./result.html'>结果页</a>
+          <button class='ghost-button topbar-link' type='button' id='restart-all'>清空重做</button>
+        </nav>
+      </header>
+
+      <main class='container'>
+        <section class='page-heading quiz-heading'>
+          <h1>测出你在关系里“你最像谁”和“谁更适合你”</h1>
+          <p>做题时记得选真实的你，不要选想象中的你。</p>
+        </section>
+
+
+        <section class='quiz-toolbar'>
+          <article class='panel-card mbti-card'>
+            <label class='mbti-label' for='gender-select'>
+              <span class='small-label'>必选项</span>
+              <strong>选择你的性别</strong>
+            </label>
+            <p>性别会轻度修正部分名字本身带性别感的人格命中，且为生成结果前的必填项。</p>
+            <select id='gender-select' class='mbti-select is-placeholder' aria-label='选择性别'></select>
+          </article>
+
+          <article class='panel-card mbti-card'>
+            <label class='mbti-label' for='zodiac-select'>
+              <span class='small-label'>非必选</span>
+              <strong>选择你的星座</strong>
+            </label>
+            <p>知道的话可以补充，不知道可以跳过；它只做轻度辅助，不会完全决定结果。</p>
+            <select id='zodiac-select' class='mbti-select is-placeholder' aria-label='选择星座'></select>
+          </article>
+        </section>
+
+
+        <div class='stage-floating-progress' id='stage-floating-progress' aria-label='关系阶段进度'>
+          <div class='stage-floating-pill'>
+            <span class='stage-floating-stage' id='stage-floating-stage'>探索期</span>
+            <div class='stage-floating-track' aria-hidden='true'>
+              <div class='stage-floating-fill' id='stage-progress-fill'>
+                <div class='stage-floating-cast' id='stage-floating-cast' aria-hidden='true'></div>
+              </div>
+            </div>
+            <span class='stage-floating-counter' id='stage-floating-counter'>0 / 0</span>
+          </div>
+        </div>
+
+        <aside class='stage-toast' id='stage-toast' aria-live='polite' aria-atomic='true' hidden>
+          <button class='stage-toast-close' id='stage-toast-close' type='button' aria-label='关闭阶段提示'>×</button>
+          <span class='stage-toast-spark stage-toast-spark-a' aria-hidden='true'></span>
+          <span class='stage-toast-spark stage-toast-spark-b' aria-hidden='true'></span>
+          <div class='stage-toast-inner'>
+            <div class='stage-toast-cast' id='stage-toast-cast' aria-hidden='true'></div>
+            <div class='stage-toast-content'>
+              <span class='stage-toast-kicker' id='stage-toast-kicker'>阶段推进</span>
+              <strong id='stage-toast-title'>进入下一阶段</strong>
+              <p id='stage-toast-copy'>你们的关系正在继续推进。</p>
+            </div>
+          </div>
+        </aside>
+
+
+        <section class='question-section'>
+          <div id='quiz-masonry' class='quiz-masonry' aria-live='polite'></div>
+        </section>
+
+
+
+        <div class='submit-bar panel-card'>
+          <div>
+            <small>完成后会跳转到独立结果页</small>
+            <strong id='submit-label'>正在载入题目</strong>
+
+          </div>
+          <button class='primary-button' type='button' id='submit-button' disabled>先做完全部题目</button>
+        </div>
+      </main>
+
+      <footer class='footer container'>
+        <p>© CPTI · 2026  结果仅供内容体验与社交分享，不替代专业的亲密关系评估。<br><span class='author-highlight'>作者：兰州小红鸡</span></p>
+        <p class="footer-inline-counter">页面访问量：<img src="https://w.saobby.com/w/b7zdnxv2"> 次 / <img src="https://w.saobby.com/w/4a96dtrp"> 人</p>
+
+      </footer>
+
+
+
+    </div>
+
+    <script src='./profiles/index.js'></script>
+    <script src='./data.js'></script>
+    <script src='./quiz.js'></script>
+
+    <script defer src="https://events.vercount.one/js"></script>
+  </body>
+</html>

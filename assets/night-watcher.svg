@@ -1,0 +1,22 @@
+<svg width="720" height="840" viewBox="0 0 720 840" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="720" height="840" rx="42" fill="url(#bg)"/>
+  <circle cx="570" cy="132" r="88" fill="#A4F0FF" fill-opacity="0.18"/>
+  <circle cx="144" cy="198" r="126" fill="#7B6EFF" fill-opacity="0.16"/>
+  <rect x="110" y="88" width="500" height="664" rx="34" fill="white" fill-opacity="0.05" stroke="white" stroke-opacity="0.12"/>
+  <path d="M360 222C287.68 222 229 280.68 229 353V465C229 560.545 306.455 638 402 638H441C498.99 638 546 590.99 546 533V408C546 305.827 462.173 222 360 222Z" fill="#15192F"/>
+  <path d="M305 295C305 254.131 338.131 221 379 221H400C457.438 221 504 267.562 504 325V408H305V295Z" fill="#0B0D18"/>
+  <rect x="296" y="383" width="208" height="228" rx="100" fill="#FFDFC9"/>
+  <path d="M281 664C281 590.546 340.546 531 414 531H417C490.454 531 550 590.546 550 664V708H281V664Z" fill="#2A315F"/>
+  <path d="M374 373C399.405 373 420 352.405 420 327C420 301.595 399.405 281 374 281C348.595 281 328 301.595 328 327C328 352.405 348.595 373 374 373Z" fill="#FFDFC9"/>
+  <path d="M352 317C352 306.507 360.507 298 371 298H404C417.255 298 428 308.745 428 322V346H352V317Z" fill="#0B0D18"/>
+  <rect x="323" y="449" width="152" height="22" rx="11" fill="#A4F0FF" fill-opacity="0.28"/>
+  <rect x="323" y="487" width="118" height="18" rx="9" fill="#A4F0FF" fill-opacity="0.18"/>
+  <text x="138" y="744" fill="#F7F8FF" fill-opacity="0.92" font-family="Arial, sans-serif" font-size="42" font-weight="700">Night Watcher</text>
+  <defs>
+    <linearGradient id="bg" x1="52" y1="24" x2="634" y2="820" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#191732"/>
+      <stop offset="0.54" stop-color="#10162B"/>
+      <stop offset="1" stop-color="#090B16"/>
+    </linearGradient>
+  </defs>
+</svg>

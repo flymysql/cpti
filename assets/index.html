@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang='zh-CN'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, viewport-fit=cover' />
+    <meta name='theme-color' content='#fffafb' />
+
+
+
+    <title>CPTI | 恋爱人格测试</title>
+    <meta
+      name='description'
+      content='CPTI 是一个移动端优先的恋爱人格测试产品原型，可从同一套 26 个人格列表里测出你是哪一型，以及哪一型最和你匹配。'
+    />
+
+    <link rel='preconnect' href='https://fonts.googleapis.com' />
+    <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin />
+    <link
+      href='https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;800&display=swap'
+      rel='stylesheet'
+    />
+    <link rel='stylesheet' href='./styles.css' />
+  </head>
+  <body class='page-home'>
+    <div class='page-shell'>
+      <div class='ambient ambient-a'></div>
+      <div class='ambient ambient-b'></div>
+
+      <header class='topbar container'>
+        <a class='brand' href='./index.html' aria-label='CPTI 首页'>
+          <span class='brand-mark brand-mark-avatar' aria-hidden='true'></span>
+
+          <span class='brand-copy'>
+            <strong>CPTI</strong>
+          </span>
+        </a>
+
+        <nav class='topbar-actions' aria-label='快捷入口'>
+          <a class='ghost-button topbar-link' href='./quiz.html'>开始测试</a>
+          <a class='ghost-button topbar-link' href='./result.html'>我的结果</a>
+        </nav>
+
+      </header>
+
+      <main class='container'>
+        <section class='hero home-hero'>
+          <div class='hero-copy'>
+            <span class='eyebrow'>CPTI恋爱人格实验室</span>
+            <h1>你在爱里<em>最像谁</em>又会被谁吸引</h1>
+            <p>这是一份围绕26种恋爱人格的测试。你会通过29道题目，在人格池里得到“你是谁”和“谁更适合你”</p>
+
+
+
+            <div class='hero-actions'>
+              <a class='primary-button hero-start-button hero-circle-button' href='./quiz.html'>
+                <span class='hero-start-button-icon' aria-hidden='true'>☞</span>
+                <span>开始测试</span>
+              </a>
+              <div class='topbar-avatar-wall' aria-labelledby='topbar-avatar-wall-label'>
+                <div class='topbar-avatar-wall-grid' id='topbar-avatar-wall'></div>
+              </div>
+            </div>
+
+
+          </div>
+        </section>
+
+        <section class='section-block compact-top'>
+            <br /><br />
+          <div class='section-heading narrow' id='home-catalog-heading'>
+            <span class='eyebrow'>恋爱人格预览</span>
+            <h2>先认识这26种恋爱人格</h2>
+            <p>每一种都对应一种更容易被记住的相处气质，你可以先点开卡片看详情，再进去做题看自己最终会落在哪一型。</p>
+
+
+          </div>
+          <div class='catalog-grid unified-grid home-catalog-grid' id='home-catalog'></div>
+          <div class='empty-state hidden' id='home-catalog-empty'>
+          </div>
+
+        </section>
+
+        <section class='section-block compact-top'>
+          <div class='section-heading narrow'>
+            <span class='eyebrow'>它会测什么</span>
+            <h2>从表达方式到情绪处理，帮你看清自己在亲密里的需求</h2>
+            <p>测试会根据你的主动性、边界感、依恋倾向和情绪处理方式，生成你的恋爱人格结果。</p>
+          </div>
+          <div class='feature-grid three'>
+            <article class='panel-card feature-card'>
+              <span class='feature-index'>01</span>
+              <h3>你在亲密关系里的人格模式</h3>
+              <p>你更擅长主动推进、制造情绪价值，还是习惯克制观察、慢慢确认。</p>
+            </article>
+            <article class='panel-card feature-card'>
+              <span class='feature-index'>02</span>
+              <h3>什么样的恋爱人格与你更匹配</h3>
+              <p>匹配的人格更适合你，和你走的更长久一点。</p>
+            </article>
+          </div>
+        </section>
+
+      </main>
+
+      <footer class='footer container'>
+        <p>© CPTI · 恋爱人格测试。结果仅供内容体验与社交分享，不替代专业评估。</p>
+
+      </footer>
+    </div>
+
+    <script src='./profiles/index.js'></script>
+    <script src='./data.js'></script>
+    <script src='./index.js'></script>
+
+  </body>
+</html>
