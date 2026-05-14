@@ -105,8 +105,8 @@ const MILESTONE_TOASTS = {
 const milestoneAnnounced = new Set();
 const chapterMicroShown = new Set();
 
-const restoreMilestoneFlags = () => {
-  const answered = countAnswered(state.answers);
+const restoreMilestoneFlags = (answers = {}) => {
+  const answered = countAnswered(answers);
   const total = questions.length;
   if (!total) return;
   const ratio = answered / total;
@@ -114,8 +114,6 @@ const restoreMilestoneFlags = () => {
     if (ratio >= pct / 100 - 0.0001) milestoneAnnounced.add(pct);
   });
 };
-
-restoreMilestoneFlags();
 
 const stageGroups = questions.reduce((groups, question, index) => {
   const lastGroup = groups[groups.length - 1];
@@ -189,6 +187,7 @@ const loadProgress = () => {
 };
 
 const state = loadProgress();
+restoreMilestoneFlags(state.answers);
 
 const isQuestionAnswered = (question, answers = {}) => {
   if (question.kind === 'rank') return normalizeRankAnswer(question, answers[question.id]).length === question.options.length;
