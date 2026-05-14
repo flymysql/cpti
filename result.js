@@ -43,7 +43,6 @@ const shareIndicators = document.querySelector('#share-indicators');
 const sharePrevButton = document.querySelector('#share-prev');
 const shareNextButton = document.querySelector('#share-next');
 const profileCatalog = document.querySelector('#profile-catalog');
-const restartButton = document.querySelector('#restart-result');
 const resultEmptyTitle = document.querySelector('#result-empty-title');
 const resultEmptyCopy = document.querySelector('#result-empty-copy');
 const resultCatalogIntro = document.querySelector('#result-catalog-intro');
@@ -58,7 +57,6 @@ const resetShareViewerChrome = () => {
   resultCatalogSection?.classList.remove('hidden');
   shareButton?.classList.remove('hidden');
   matchShareButton?.classList.remove('hidden');
-  restartButton?.classList.remove('hidden');
   document.body.classList.remove('is-share-viewer');
 };
 
@@ -69,7 +67,6 @@ const applyShareViewerChrome = () => {
   resultCatalogSection?.classList.add('hidden');
   shareButton?.classList.add('hidden');
   matchShareButton?.classList.add('hidden');
-  restartButton?.classList.add('hidden');
   document.body.classList.add('is-share-viewer');
 };
 
@@ -139,16 +136,6 @@ const showEmptyState = (reason = 'default') => {
       : L('result.emptyCopy');
   }
 };
-
-const clearDataAndRestart = () => {
-  const confirmed = window.confirm(L('result.restartConfirm'));
-  if (!confirmed) return;
-
-  localStorage.removeItem(STORAGE.resultKey);
-  localStorage.removeItem(STORAGE.progressKey);
-  window.location.href = I18N.withLang('./quiz.html');
-};
-
 
 const setFloatingButtonLabel = (button, text) => {
   if (!button) return;
@@ -2621,8 +2608,6 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
-restartButton?.addEventListener('click', clearDataAndRestart);
-
 bindShareGalleryCarouselPause();
 
 const applyResultPageChrome = () => {
@@ -2632,15 +2617,7 @@ const applyResultPageChrome = () => {
   document.querySelector('.brand')?.setAttribute('href', I18N.withLang('./index.html'));
   document.querySelector('.topbar-actions')?.setAttribute('aria-label', L('common.topbarNavAria'));
   document.querySelectorAll('.topbar-actions .ghost-button, .topbar-actions .topbar-link').forEach((el) => {
-    if (el.id === 'restart-result') {
-      el.textContent = L('result.restart');
-      return;
-    }
     const href = el.getAttribute('href') || '';
-    if (href.includes('index.html')) {
-      el.textContent = L('common.home');
-      el.setAttribute('href', I18N.withLang('./index.html'));
-    }
     if (href.includes('quiz.html')) {
       el.textContent = L('common.quiz');
       el.setAttribute('href', I18N.withLang('./quiz.html'));
