@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang='zh-CN'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, viewport-fit=cover' />
+    <meta name='theme-color' content='#fffafb' />
+    <script>
+      // if (location.protocol === 'http:' && /(^|\.)cpti\.cc$/i.test(location.hostname)) {
+      //   location.replace(`https://${location.host}${location.pathname}${location.search}${location.hash}`);
+      // }
+    </script>
+
+    <title>CPTI | 结果页</title>
+    <meta
+      name='description'
+      content='CPTI 独立结果页，用于展示你的恋爱人格、最和你匹配的类型，以及完整 26 型共享人格图鉴。'
+    />
+
+    <link rel='preconnect' href='https://fonts.googleapis.com' />
+    <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin />
+    <link
+      href='https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;800&display=swap'
+      rel='stylesheet'
+    />
+    <link rel='stylesheet' href='./styles.css' />
+  </head>
+  <body class='page-result'>
+    <div class='page-shell'>
+      <div class='ambient ambient-a'></div>
+      <div class='ambient ambient-b'></div>
+
+      <header class='topbar container'>
+        <a class='brand' href='./index.html' aria-label='返回首页'>
+          <span class='brand-mark brand-mark-avatar' aria-hidden='true'></span>
+
+          <span class='brand-copy'>
+            <strong>CPTI</strong>
+            <small>恋爱人格实验室 cpti.cc</small>
+          </span>
+        </a>
+
+        <nav class='topbar-actions' aria-label='快捷入口'>
+          <a class='ghost-button topbar-link' href='./index.html'>首页</a>
+          <a class='ghost-button topbar-link' href='./quiz.html'>测试页</a>
+          <button class='ghost-button topbar-link' type='button' id='restart-result'>重新测试</button>
+        </nav>
+      </header>
+
+      <main class='container'>
+        <section class='page-heading result-heading'>
+          <h1>你的恋爱人格配方</h1>
+          <p id='result-heading-summary'>完成测试后，这里会展示你的人格类型与最匹配类型。</p>
+        </section>
+
+        <section id='result-empty' class='panel-card empty-state'>
+          <h2>还没有可展示的结果</h2>
+          <p>先去测试页做完题，再回来这里看完整结果。</p>
+          <div class='hero-actions compact'>
+            <a class='primary-button' href='./quiz.html'>去做题</a>
+            <a class='secondary-button' href='./index.html'>返回首页</a>
+          </div>
+        </section>
+
+        <section id='result-view' class='hidden'>
+          <div class='result-hero panel-card'>
+            <span class='eyebrow'>你的 CPTI 配方</span>
+            <div class='result-hero-cast' id='result-hero-cast' aria-hidden='true'></div>
+            <h2 id='formula-title'>结果标题</h2>
+            <p id='formula-summary'>结果说明</p>
+
+          </div>
+
+          <div class='result-dual-grid'>
+            <article class='panel-card result-panel' id='self-result'></article>
+            <article class='panel-card result-panel' id='need-result'></article>
+          </div>
+
+          <div class='feature-grid three result-insights'>
+            <article class='panel-card info-card'>
+              <h3>关系关键词</h3>
+              <div class='tag-row' id='result-tags'></div>
+            </article>
+            <article class='panel-card info-card'>
+              <h3>一句话提醒</h3>
+              <p id='result-note'></p>
+            </article>
+            <article class='panel-card info-card'>
+              <h3>分享文案</h3>
+              <p id='share-copy'></p>
+              <div class='hero-actions compact'>
+                <button class='secondary-button compact-button' type='button' id='copy-result'>复制文案</button>
+              </div>
+            </article>
+
+          </div>
+
+          <div class='floating-share-actions hidden' id='floating-share-actions'>
+            <button
+              class='primary-button floating-share-button'
+              type='button'
+              id='share-result'
+              aria-label='生成并预览我的画像长图'
+              title='分享我的画像'
+            >
+              <span class='floating-share-label'>分享我的画像</span>
+            </button>
+            <button
+              class='secondary-button floating-share-button floating-share-button-secondary'
+              type='button'
+              id='share-match-result'
+              aria-label='生成并预览匹配对象卡片'
+              title='我的匹配对象'
+            >
+              <span class='floating-share-label'>我的匹配对象</span>
+            </button>
+          </div>
+
+
+
+          <section class='section-block compact-top'>
+            <div class='section-heading narrow'>
+              <span class='eyebrow'>完整人格图鉴</span>
+              <h2>同一套人格列表，从两个角度命中你</h2>
+              <p>下面这26个类型，既可能是你自己，也可能是最和你匹配的恋人类型；点开卡片还能继续看完整详情。</p>
+
+
+            </div>
+
+            <div class='catalog-block unified-catalog-block'>
+              <div class='catalog-grid unified-grid' id='profile-catalog'></div>
+            </div>
+          </section>
+        </section>
+
+        <div class='share-modal hidden' id='share-modal' role='dialog' aria-modal='true'>
+          <button class='share-modal-backdrop' type='button' aria-label='关闭分享预览' id='share-backdrop'></button>
+          <div class='share-modal-content'>
+            <button class='share-image-close share-modal-close' type='button' id='share-close' aria-label='关闭分享预览'>×</button>
+            <p class='share-tip'>长按图片可保存到本地相册</p>
+            <div class='share-gallery' id='share-gallery' aria-label='分享图片预览轮播'>
+              <div class='share-gallery-track' id='share-track'></div>
+            </div>
+            <div class='share-gallery-footer'>
+              <div class='share-indicators' id='share-indicators' aria-label='分享图片分页'></div>
+              <div class='share-gallery-nav'>
+                <button class='secondary-button compact-button share-nav-button' type='button' id='share-prev'>上一张</button>
+                <button class='primary-button compact-button share-nav-button' type='button' id='share-next'>下一张</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+
+      </main>
+
+
+      <footer class='footer container'>
+        <p>© CPTI · 2026  结果仅供内容体验与社交分享，不替代专业的亲密关系评估。<br><span class='author-highlight'>作者：兰州小红鸡</span></p>
+        <p class="footer-inline-counter">结果页面访问量：<img src="https://w.saobby.com/w/josglubm"> 次 / <img src="https://w.saobby.com/w/572w7rwg" alt="结果页面访问量统计"> 人</p>
+      </footer>
+
+    </div>
+
+    <script src='./profiles/index.js'></script>
+    <script src='./data.js'></script>
+    <script src='./result.js'></script>
+  </body>
+</html>
