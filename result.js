@@ -183,7 +183,7 @@ const renderResultHeroCast = (selfProfile, needProfile, gender = '') => {
   resultHeroCast.innerHTML = `
     ${heroCastAvatarHtml(selfProfile, 'is-left', gender)}
     <span class='result-hero-heart' aria-hidden='true'>❤</span>
-    ${heroCastAvatarHtml(needProfile, 'is-right', matchRasterGenderForUser(gender))}
+    ${heroCastAvatarHtml(needProfile, 'is-right', gender)}
   `;
 };
 
@@ -206,7 +206,6 @@ const getConfidenceRating = (confidence = 0, min = 50, max = 70) => {
 const panelHtml = (title, profile, confidence, mode, gender = '') => {
 
   const isNeedMode = mode === 'need';
-  const avatarRasterGender = isNeedMode ? matchRasterGenderForUser(gender) : gender;
   const lp = I18N.localizeProfile(profile);
   const description = isNeedMode
     ? (I18N.getLocale() === 'en' ? I18N.taifyNeedEn(lp.description) : taifyCopy(lp.description))
@@ -225,7 +224,7 @@ const panelHtml = (title, profile, confidence, mode, gender = '') => {
   return `
     <div class='result-panel-head'>
       <span class='mini-badge'>${title}</span>
-      ${avatarHtml(profile, 'large', avatarRasterGender)}
+      ${avatarHtml(profile, 'large', gender)}
       <div class='result-panel-copy'>
         <h3>${lp.name}</h3>
         <div class='result-metrics'>
@@ -910,12 +909,6 @@ const drawCard = async ({ ctx, profile, title, subtitle, x, y, width }) => {
 const normalizeGender = (gender = '') => {
   if (gender === 'male' || gender === 'female' || gender === 'nonbinary') return gender;
   return 'female';
-};
-
-/** Pick -male / -female raster for the user's *match* archetype (opposite binary line from self). */
-const matchRasterGenderForUser = (rawGender = '') => {
-  const g = normalizeGender(rawGender);
-  return g === 'male' ? 'female' : 'male';
 };
 
 const getShareTargetGender = (gender = '', variant = 'self') => {
@@ -1711,7 +1704,7 @@ const generateShareImage = async (computed, options = {}) => {
       title: Sk('portraitMatch'),
       name: I18N.localizeProfile(compareProfiles.right).name,
       mode: 'need',
-      avatarSrc: resolveRasterAvatarUrl(compareProfiles.right.id, matchRasterGenderForUser(selectedGender)),
+      avatarSrc: resolveRasterAvatarUrl(compareProfiles.right.id, selectedGender),
     });
 
 
@@ -2406,8 +2399,10 @@ const catalogHtml = (profile, selfId, needId, gender = '') => {
   const cardClass = isSelf && isNeed ? 'catalog-card is-double-active' : isSelf || isNeed ? 'catalog-card is-active' : 'catalog-card';
 
   const rarityLabel = getProfileRarityLabel(profile.id);
-  const thumbGender = profile.id === needId ? matchRasterGenderForUser(gender) : gender;
-  const thumbSrc = resolveRasterAvatarThumbUrl(profile.id, { quizCompleted: true, userGender: thumbGender });
+  const thumbSrc = resolveRasterAvatarThumbUrl(profile.id, {
+    quizCompleted: true,
+    userGender: gender || '',
+  });
   return `
     <a
       class='${cardClass} profile-card-link'
