@@ -84,8 +84,10 @@ let shareCarouselHoldStartX = 0;
 let shareCarouselHoldStartY = 0;
 const SHARE_CAROUSEL_INTERVAL_MS = 5000;
 const SHARE_CAROUSEL_PAUSE_HOLD_MS = 450;
-/** Longer celebration; sparks animate ~6.6s, host clears after full window. */
-const SHARE_CELEBRATION_MS = 7000;
+/** How often to spawn a new burst while the share modal is open. */
+const SHARE_CELEBRATION_BURST_INTERVAL_MS = 1100;
+
+let shareCelebrationBurstTimer = null;
 
 const shareGalleryWidthCapPx = () => {
   const vw = window.innerWidth;
@@ -121,9 +123,9 @@ const clearShareGalleryLayoutStyles = () => {
 };
 
 /**
- * Heavy celebration (many DOM nodes + large blurred box-shadows per spark) can
- * exhaust mobile GPU compositor memory → jank and blank tiles. Lite mode uses
- * fewer particles and cheaper paint when the viewport is narrow or input is coarse.
+ * Many DOM nodes + large blurred box-shadows per spark can exhaust mobile GPU
+ * compositor memory. Lite mode uses fewer rays per burst and cheaper paint.
+ * Looping bursts remove each spark on `animationend` to cap live DOM size.
  */
 const shouldUseLiteShareCelebration = () => {
   if (typeof window.matchMedia !== 'function') return window.innerWidth < 720;
@@ -132,10 +134,44 @@ const shouldUseLiteShareCelebration = () => {
 };
 
 const clearShareModalCelebration = () => {
+  if (shareCelebrationBurstTimer !== null) {
+    window.clearInterval(shareCelebrationBurstTimer);
+    shareCelebrationBurstTimer = null;
+  }
   document.querySelectorAll('.share-celebration-layer').forEach((el) => el.remove());
 };
 
-const startShareOpenCelebration = () => {
+const spawnShareCelebrationBurst = (layer) => {
+  if (!layer?.isConnected || shareModal?.classList.contains('hidden')) return;
+
+  const lite = shouldUseLiteShareCelebration();
+  const colors = ['#ff8fc3', '#8cbcff', '#ffd280', '#a8e6ff', '#c9b3ff', '#ffffff', '#ffb8d9'];
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const distScale = Math.max(vw, vh) / 100;
+  const rays = lite ? 12 + Math.floor(Math.random() * 8) : 18 + Math.floor(Math.random() * 10);
+  const cx = 8 + Math.random() * 84;
+  const cy = 10 + Math.random() * 80;
+  const dur = (lite ? 2.2 : 2.7) + Math.random() * 0.55;
+
+  for (let i = 0; i < rays; i += 1) {
+    const p = document.createElement('span');
+    p.className = 'share-celebration-spark share-celebration-spark--loop';
+    const ang = (Math.PI * 2 * i) / rays + (Math.random() - 0.5) * 0.5;
+    const dist = ((lite ? 12 : 16) + Math.random() * (lite ? 22 : 32)) * distScale;
+    p.style.left = `${cx}%`;
+    p.style.top = `${cy}%`;
+    p.style.setProperty('--sx', `${Math.cos(ang) * dist}px`);
+    p.style.setProperty('--sy', `${Math.sin(ang) * dist}px`);
+    p.style.setProperty('--c', colors[i % colors.length]);
+    p.style.animationDelay = `${Math.random() * 0.15}s`;
+    p.style.animationDuration = `${dur}s`;
+    p.addEventListener('animationend', () => p.remove(), { once: true });
+    layer.appendChild(p);
+  }
+};
+
+const startShareModalCelebration = () => {
   if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
   if (shareModal?.classList.contains('hidden')) return;
   clearShareModalCelebration();
@@ -147,43 +183,17 @@ const startShareOpenCelebration = () => {
   const lite = shouldUseLiteShareCelebration();
   if (lite) layer.classList.add('share-celebration-layer--lite');
 
-  const colors = ['#ff8fc3', '#8cbcff', '#ffd280', '#a8e6ff', '#c9b3ff', '#ffffff', '#ffb8d9'];
-  const burstCount = lite ? 3 : 6;
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const distScale = Math.max(vw, vh) / 100;
-
-  for (let b = 0; b < burstCount; b += 1) {
-    const edge = Math.random();
-    const cx = edge < 0.34
-      ? 4 + Math.random() * 22
-      : edge < 0.67
-        ? 78 + Math.random() * 18
-        : 18 + Math.random() * 64;
-    const cy = edge < 0.5
-      ? 8 + Math.random() * 38
-      : 52 + Math.random() * 40;
-    const raysMin = lite ? 12 : 26;
-    const raysRand = lite ? 8 : 14;
-    const rays = raysMin + Math.floor(Math.random() * raysRand);
-    for (let i = 0; i < rays; i += 1) {
-      const p = document.createElement('span');
-      p.className = 'share-celebration-spark';
-      const ang = (Math.PI * 2 * i) / rays + (Math.random() - 0.5) * 0.45;
-      const dist = ((lite ? 14 : 20) + Math.random() * (lite ? 26 : 40)) * distScale;
-      p.style.left = `${cx}%`;
-      p.style.top = `${cy}%`;
-      p.style.setProperty('--sx', `${Math.cos(ang) * dist}px`);
-      p.style.setProperty('--sy', `${Math.sin(ang) * dist}px`);
-      p.style.setProperty('--c', colors[i % colors.length]);
-      p.style.animationDelay = `${b * 0.38 + Math.random() * 0.35}s`;
-      p.style.animationDuration = `${6.4 + Math.random() * 0.6}s`;
-      layer.appendChild(p);
-    }
-  }
-
   document.body.appendChild(layer);
-  window.setTimeout(() => clearShareModalCelebration(), SHARE_CELEBRATION_MS);
+
+  const tick = () => {
+    if (shareModal?.classList.contains('hidden') || !layer.isConnected) {
+      clearShareModalCelebration();
+      return;
+    }
+    spawnShareCelebrationBurst(layer);
+  };
+  tick();
+  shareCelebrationBurstTimer = window.setInterval(tick, SHARE_CELEBRATION_BURST_INTERVAL_MS);
 };
 
 const getShareQrLandingUrl = () => {
@@ -2218,7 +2228,7 @@ const getShareSlideIndex = (slides = [], slideId = 'self') => {
   return Math.max(0, matchedIndex);
 };
 
-const syncShareModalWithCachedSlides = (computed, preferredSlideId = null, modalOptions = {}) => {
+const syncShareModalWithCachedSlides = (computed, preferredSlideId = null) => {
   const slides = getCachedShareSlides(computed, {
     includeSelf: true,
     includeMatch: true,
@@ -2226,7 +2236,7 @@ const syncShareModalWithCachedSlides = (computed, preferredSlideId = null, modal
   if (!slides.length) return false;
 
   const activeSlideId = preferredSlideId || shareModalSlides[activeShareSlideIndex]?.id || 'self';
-  openShareModal(slides, getShareSlideIndex(slides, activeSlideId), modalOptions);
+  openShareModal(slides, getShareSlideIndex(slides, activeSlideId));
   return true;
 };
 
@@ -2435,10 +2445,8 @@ const renderShareGallery = (slides) => {
   scheduleShareCarousel();
 };
 
-const openShareModal = (slides, startIndex = 0, options = {}) => {
+const openShareModal = (slides, startIndex = 0) => {
   if (!shareModal || !shareTrack || !slides?.length) return;
-
-  const { celebrateOpening = false } = options;
 
   shareCarouselPaused = false;
   shareCarouselHoldActive = false;
@@ -2449,11 +2457,9 @@ const openShareModal = (slides, startIndex = 0, options = {}) => {
   document.body.style.overflow = 'hidden';
   window.requestAnimationFrame(() => {
     syncShareGalleryLayoutMetrics();
-    if (celebrateOpening) {
-      window.requestAnimationFrame(() => {
-        startShareOpenCelebration();
-      });
-    }
+    window.requestAnimationFrame(() => {
+      startShareModalCelebration();
+    });
   });
 };
 
@@ -2481,15 +2487,15 @@ const showNextShareSlide = () => {
   setActiveShareSlide((activeShareSlideIndex + 1) % n);
 };
 
-const openSelfSharePreview = async (computed, { celebrateOpening = false } = {}) => {
+const openSelfSharePreview = async (computed) => {
   const selfDataUrl = await ensureShareAsset(computed, 'self');
   if (!selfDataUrl) {
     throw new Error('Self share image unavailable');
   }
 
-  const openedFromCache = syncShareModalWithCachedSlides(computed, 'self', { celebrateOpening });
+  const openedFromCache = syncShareModalWithCachedSlides(computed, 'self');
   if (!openedFromCache) {
-    openShareModal(buildShareSlides(computed, selfDataUrl, null), 0, { celebrateOpening });
+    openShareModal(buildShareSlides(computed, selfDataUrl, null), 0);
   }
 
   const { cache } = ensureShareAssetState(computed);
@@ -2524,7 +2530,7 @@ const autoOpenShare = async (computed) => {
   if (autoShareOpened || !shareModal || computed?.fromLinkSnapshot) return;
   autoShareOpened = true;
   try {
-    await openSelfSharePreview(computed, { celebrateOpening: true });
+    await openSelfSharePreview(computed);
   } catch (error) {
     console.error('Failed to generate auto self share preview:', error);
   }
