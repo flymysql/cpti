@@ -120,6 +120,17 @@ const clearShareGalleryLayoutStyles = () => {
   });
 };
 
+/**
+ * Heavy celebration (many DOM nodes + large blurred box-shadows per spark) can
+ * exhaust mobile GPU compositor memory → jank and blank tiles. Lite mode uses
+ * fewer particles and cheaper paint when the viewport is narrow or input is coarse.
+ */
+const shouldUseLiteShareCelebration = () => {
+  if (typeof window.matchMedia !== 'function') return window.innerWidth < 720;
+  return window.matchMedia('(max-width: 720px)').matches
+    || window.matchMedia('(pointer: coarse)').matches;
+};
+
 const clearShareModalCelebration = () => {
   document.querySelectorAll('.share-celebration-layer').forEach((el) => el.remove());
 };
@@ -133,8 +144,11 @@ const startShareOpenCelebration = () => {
   layer.className = 'share-celebration-layer';
   layer.setAttribute('aria-hidden', 'true');
 
+  const lite = shouldUseLiteShareCelebration();
+  if (lite) layer.classList.add('share-celebration-layer--lite');
+
   const colors = ['#ff8fc3', '#8cbcff', '#ffd280', '#a8e6ff', '#c9b3ff', '#ffffff', '#ffb8d9'];
-  const burstCount = 8;
+  const burstCount = lite ? 3 : 6;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const distScale = Math.max(vw, vh) / 100;
@@ -149,12 +163,14 @@ const startShareOpenCelebration = () => {
     const cy = edge < 0.5
       ? 8 + Math.random() * 38
       : 52 + Math.random() * 40;
-    const rays = 36 + Math.floor(Math.random() * 16);
+    const raysMin = lite ? 12 : 26;
+    const raysRand = lite ? 8 : 14;
+    const rays = raysMin + Math.floor(Math.random() * raysRand);
     for (let i = 0; i < rays; i += 1) {
       const p = document.createElement('span');
       p.className = 'share-celebration-spark';
       const ang = (Math.PI * 2 * i) / rays + (Math.random() - 0.5) * 0.45;
-      const dist = (22 + Math.random() * 42) * distScale;
+      const dist = ((lite ? 14 : 20) + Math.random() * (lite ? 26 : 40)) * distScale;
       p.style.left = `${cx}%`;
       p.style.top = `${cy}%`;
       p.style.setProperty('--sx', `${Math.cos(ang) * dist}px`);
@@ -2434,7 +2450,9 @@ const openShareModal = (slides, startIndex = 0, options = {}) => {
   window.requestAnimationFrame(() => {
     syncShareGalleryLayoutMetrics();
     if (celebrateOpening) {
-      startShareOpenCelebration();
+      window.requestAnimationFrame(() => {
+        startShareOpenCelebration();
+      });
     }
   });
 };
