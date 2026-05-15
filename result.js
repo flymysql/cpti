@@ -70,6 +70,7 @@ const applyShareViewerChrome = () => {
 
 let lastComputed = null;
 let autoShareOpened = false;
+let shareGallerySlidePx = 0;
 let shareModalSlides = [];
 let activeShareSlideIndex = 0;
 let shareAssetCache = null;
@@ -83,6 +84,69 @@ let shareCarouselHoldStartX = 0;
 let shareCarouselHoldStartY = 0;
 const SHARE_CAROUSEL_INTERVAL_MS = 5000;
 const SHARE_CAROUSEL_PAUSE_HOLD_MS = 450;
+const SHARE_CELEBRATION_MS = 2800;
+
+const maxShareGalleryImageCssHeight = () => {
+  const vh = typeof window.visualViewport?.height === 'number'
+    ? window.visualViewport.height
+    : window.innerHeight;
+  const v = Math.min(vh, window.innerHeight);
+  return Math.max(120, v - 210);
+};
+
+const computeShareImageDisplayWidth = (img) => {
+  if (!(img instanceof HTMLImageElement) || !img.naturalWidth || !img.naturalHeight) return 0;
+  const maxH = maxShareGalleryImageCssHeight();
+  const scale = Math.min(1, maxH / img.naturalHeight);
+  return Math.ceil(img.naturalWidth * scale);
+};
+
+const clearShareGalleryLayoutStyles = () => {
+  shareGallerySlidePx = 0;
+  if (!shareGallery || !shareTrack) return;
+  shareGallery.style.width = '';
+  shareTrack.style.width = '';
+  shareTrack.style.transform = '';
+  shareTrack.querySelectorAll('.share-gallery-slide').forEach((slide) => {
+    slide.style.flex = '';
+    slide.style.width = '';
+    slide.style.minWidth = '';
+  });
+};
+
+const removeShareOpenCelebration = () => {
+  document.querySelector('.share-celebration-layer')?.remove();
+};
+
+const startShareOpenCelebration = () => {
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+  removeShareOpenCelebration();
+  const layer = document.createElement('div');
+  layer.className = 'share-celebration-layer';
+  layer.setAttribute('aria-hidden', 'true');
+  const colors = ['#ff8fc3', '#8cbcff', '#ffd280', '#a8e6ff', '#c9b3ff', '#ffffff'];
+  const burstCount = 3;
+  for (let b = 0; b < burstCount; b += 1) {
+    const cx = 16 + Math.random() * 68;
+    const cy = 18 + Math.random() * 48;
+    const rays = 20 + Math.floor(Math.random() * 8);
+    for (let i = 0; i < rays; i += 1) {
+      const p = document.createElement('span');
+      p.className = 'share-celebration-spark';
+      const ang = (Math.PI * 2 * i) / rays + (Math.random() - 0.5) * 0.35;
+      const dist = 80 + Math.random() * 160;
+      p.style.left = `${cx}%`;
+      p.style.top = `${cy}%`;
+      p.style.setProperty('--sx', `${Math.cos(ang) * dist}px`);
+      p.style.setProperty('--sy', `${Math.sin(ang) * dist}px`);
+      p.style.setProperty('--c', colors[i % colors.length]);
+      p.style.animationDelay = `${b * 0.14 + Math.random() * 0.22}s`;
+      layer.appendChild(p);
+    }
+  }
+  document.body.appendChild(layer);
+  window.setTimeout(() => layer.remove(), SHARE_CELEBRATION_MS);
+};
 
 const getShareQrLandingUrl = () => {
   try {
@@ -2116,7 +2180,7 @@ const getShareSlideIndex = (slides = [], slideId = 'self') => {
   return Math.max(0, matchedIndex);
 };
 
-const syncShareModalWithCachedSlides = (computed, preferredSlideId = null) => {
+const syncShareModalWithCachedSlides = (computed, preferredSlideId = null, modalOptions = {}) => {
   const slides = getCachedShareSlides(computed, {
     includeSelf: true,
     includeMatch: true,
@@ -2124,7 +2188,7 @@ const syncShareModalWithCachedSlides = (computed, preferredSlideId = null) => {
   if (!slides.length) return false;
 
   const activeSlideId = preferredSlideId || shareModalSlides[activeShareSlideIndex]?.id || 'self';
-  openShareModal(slides, getShareSlideIndex(slides, activeSlideId));
+  openShareModal(slides, getShareSlideIndex(slides, activeSlideId), modalOptions);
   return true;
 };
 
@@ -2256,8 +2320,44 @@ const renderShareIndicators = () => {
 const updateShareGallery = () => {
   if (!shareTrack) return;
 
-  shareTrack.style.transform = `translateX(-${activeShareSlideIndex * 100}%)`;
+  if (shareGallerySlidePx > 0) {
+    shareTrack.style.transform = `translateX(-${activeShareSlideIndex * shareGallerySlidePx}px)`;
+  } else {
+    shareTrack.style.transform = `translateX(-${activeShareSlideIndex * 100}%)`;
+  }
   renderShareIndicators();
+};
+
+const syncShareGalleryLayoutMetrics = () => {
+  if (!shareGallery || !shareTrack || shareModal?.classList.contains('hidden')) return;
+  const slideEls = shareTrack.querySelectorAll('.share-gallery-slide');
+  if (!slideEls.length) return;
+
+  let maxDisp = 0;
+  slideEls.forEach((slide) => {
+    const im = slide.querySelector('img.share-gallery-image');
+    const w = im ? computeShareImageDisplayWidth(im) : 0;
+    if (w > maxDisp) maxDisp = w;
+  });
+
+  const cap = Math.floor(window.innerWidth * 0.96 - 20);
+  const maxW = Math.min(maxDisp, cap);
+  if (maxW < 40) {
+    shareGallerySlidePx = 0;
+    updateShareGallery();
+    return;
+  }
+
+  shareGallerySlidePx = maxW;
+  const n = slideEls.length;
+  slideEls.forEach((slide) => {
+    slide.style.flex = `0 0 ${maxW}px`;
+    slide.style.width = `${maxW}px`;
+    slide.style.minWidth = `${maxW}px`;
+  });
+  shareTrack.style.width = `${n * maxW}px`;
+  shareGallery.style.width = `${maxW}px`;
+  updateShareGallery();
 };
 
 const setActiveShareSlide = (index = 0) => {
@@ -2270,6 +2370,8 @@ const setActiveShareSlide = (index = 0) => {
 const renderShareGallery = (slides) => {
   shareModalSlides = Array.isArray(slides) ? slides : [];
   if (!shareTrack) return;
+
+  clearShareGalleryLayoutStyles();
 
   shareTrack.innerHTML = shareModalSlides.map((slide) => `
     <figure class='share-gallery-slide' data-share-slide='${slide.id}'>
@@ -2284,11 +2386,21 @@ const renderShareGallery = (slides) => {
     shareIndicators.innerHTML = '';
   }
 
-  setActiveShareSlide(activeShareSlideIndex);
+  activeShareSlideIndex = Math.max(0, Math.min(activeShareSlideIndex, shareModalSlides.length - 1));
+  shareTrack.querySelectorAll('img.share-gallery-image').forEach((im) => {
+    const run = () => syncShareGalleryLayoutMetrics();
+    if (im.complete) queueMicrotask(run);
+    else im.addEventListener('load', run, { once: true });
+  });
+  syncShareGalleryLayoutMetrics();
+  renderShareIndicators();
+  scheduleShareCarousel();
 };
 
-const openShareModal = (slides, startIndex = 0) => {
+const openShareModal = (slides, startIndex = 0, options = {}) => {
   if (!shareModal || !shareTrack || !slides?.length) return;
+
+  const { celebrateOpening = false } = options;
 
   shareCarouselPaused = false;
   shareCarouselHoldActive = false;
@@ -2297,6 +2409,12 @@ const openShareModal = (slides, startIndex = 0) => {
   renderShareGallery(slides);
   shareModal.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
+  window.requestAnimationFrame(() => {
+    syncShareGalleryLayoutMetrics();
+    if (celebrateOpening) {
+      startShareOpenCelebration();
+    }
+  });
 };
 
 const closeShareModal = () => {
@@ -2305,6 +2423,8 @@ const closeShareModal = () => {
   shareCarouselPaused = false;
   shareCarouselHoldActive = false;
   clearShareCarouselHoldTimer();
+  removeShareOpenCelebration();
+  clearShareGalleryLayoutStyles();
   shareModal?.classList.add('hidden');
   document.body.style.overflow = '';
 };
@@ -2321,15 +2441,15 @@ const showNextShareSlide = () => {
   setActiveShareSlide((activeShareSlideIndex + 1) % n);
 };
 
-const openSelfSharePreview = async (computed) => {
+const openSelfSharePreview = async (computed, { celebrateOpening = false } = {}) => {
   const selfDataUrl = await ensureShareAsset(computed, 'self');
   if (!selfDataUrl) {
     throw new Error('Self share image unavailable');
   }
 
-  const openedFromCache = syncShareModalWithCachedSlides(computed, 'self');
+  const openedFromCache = syncShareModalWithCachedSlides(computed, 'self', { celebrateOpening });
   if (!openedFromCache) {
-    openShareModal(buildShareSlides(computed, selfDataUrl, null), 0);
+    openShareModal(buildShareSlides(computed, selfDataUrl, null), 0, { celebrateOpening });
   }
 
   const { cache } = ensureShareAssetState(computed);
@@ -2364,7 +2484,7 @@ const autoOpenShare = async (computed) => {
   if (autoShareOpened || !shareModal || computed?.fromLinkSnapshot) return;
   autoShareOpened = true;
   try {
-    await openSelfSharePreview(computed);
+    await openSelfSharePreview(computed, { celebrateOpening: true });
   } catch (error) {
     console.error('Failed to generate auto self share preview:', error);
   }
