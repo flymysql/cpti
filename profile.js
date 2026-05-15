@@ -225,7 +225,7 @@ const applyProfileChrome = () => {
   });
   const foot = document.querySelector('.footer.container p');
   if (foot) {
-    foot.innerHTML = `${L('profile.footer')}<br><span class='author-highlight'>${L('common.author')}</span><br><span class='footer-friend'>${L('common.footerFriendLineHtml')}</span>`;
+    foot.innerHTML = `${L('profile.footer')}<br><span class='author-highlight'>${L('common.authorHtml')}</span>`;
   }
   const pe = document.querySelector('#profile-empty .primary-button');
   const ps = document.querySelector('#profile-empty .secondary-button');
