@@ -2650,12 +2650,12 @@ body.page-result .footer {
 }
 
 .share-celebration-layer--lite .share-celebration-spark {
-  width: 24px;
-  height: 24px;
-  margin-left: -12px;
-  margin-top: -12px;
+  width: 34px;
+  height: 34px;
+  margin-left: -17px;
+  margin-top: -17px;
   background: radial-gradient(circle at 34% 30%, #ffffff 0%, #ffffff 32%, var(--c, #ff8fc3) 62%, var(--c, #ff8fc3) 100%);
-  box-shadow: 0 0 18px var(--c, #ffffff);
+  box-shadow: 0 0 22px var(--c, #ffffff);
   animation-name: share-celebration-burst-lite;
 }
 
