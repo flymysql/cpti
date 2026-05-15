@@ -2426,19 +2426,10 @@ main {
 .share-modal-backdrop {
   position: absolute;
   inset: 0;
-  z-index: 0;
   border: none;
   background:
     radial-gradient(circle at 50% 18%, rgba(146, 175, 214, 0.18), transparent 30%),
     rgba(26, 34, 48, 0.34);
-}
-
-.share-celebration-host {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  overflow: hidden;
 }
 
 .share-modal-content {
@@ -2457,7 +2448,7 @@ main {
   background: linear-gradient(180deg, rgba(248, 250, 254, 0.98), rgba(238, 243, 249, 0.98));
   border: 1px solid rgba(117, 138, 170, 0.16);
   box-shadow: 0 24px 64px rgba(32, 48, 74, 0.16);
-  z-index: 2;
+  z-index: 1;
 }
 
 
@@ -2610,15 +2601,23 @@ main {
   background: linear-gradient(135deg, #ff8fc3, #8cbcff);
 }
 
-.share-celebration-host .share-celebration-spark {
+.share-celebration-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 85;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.share-celebration-layer .share-celebration-spark {
   position: absolute;
-  width: 12px;
-  height: 12px;
-  margin-left: -6px;
-  margin-top: -6px;
+  width: 20px;
+  height: 20px;
+  margin-left: -10px;
+  margin-top: -10px;
   border-radius: 50%;
   background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.95), var(--c, #ff8fc3) 58%);
-  box-shadow: 0 0 22px var(--c, #ffffff), 0 0 44px rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 28px var(--c, #ffffff), 0 0 56px rgba(255, 255, 255, 0.4);
   opacity: 0;
   animation-name: share-celebration-burst;
   animation-timing-function: ease-out;

@@ -34,7 +34,6 @@ const floatingShareActions = document.querySelector('#floating-share-actions');
 const shareButton = document.querySelector('#share-result');
 const matchShareButton = document.querySelector('#share-match-result');
 const shareModal = document.querySelector('#share-modal');
-const shareCelebrationHost = document.querySelector('#share-celebration-host');
 
 const shareBackdrop = document.querySelector('#share-backdrop');
 const shareClose = document.querySelector('#share-close');
@@ -122,14 +121,17 @@ const clearShareGalleryLayoutStyles = () => {
 };
 
 const clearShareModalCelebration = () => {
-  document.querySelector('.share-celebration-layer')?.remove();
-  if (shareCelebrationHost) shareCelebrationHost.innerHTML = '';
+  document.querySelectorAll('.share-celebration-layer').forEach((el) => el.remove());
 };
 
 const startShareOpenCelebration = () => {
   if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-  if (!shareCelebrationHost || shareModal?.classList.contains('hidden')) return;
+  if (shareModal?.classList.contains('hidden')) return;
   clearShareModalCelebration();
+
+  const layer = document.createElement('div');
+  layer.className = 'share-celebration-layer';
+  layer.setAttribute('aria-hidden', 'true');
 
   const colors = ['#ff8fc3', '#8cbcff', '#ffd280', '#a8e6ff', '#c9b3ff', '#ffffff', '#ffb8d9'];
   const burstCount = 8;
@@ -160,10 +162,11 @@ const startShareOpenCelebration = () => {
       p.style.setProperty('--c', colors[i % colors.length]);
       p.style.animationDelay = `${b * 0.38 + Math.random() * 0.35}s`;
       p.style.animationDuration = `${6.4 + Math.random() * 0.6}s`;
-      shareCelebrationHost.appendChild(p);
+      layer.appendChild(p);
     }
   }
 
+  document.body.appendChild(layer);
   window.setTimeout(() => clearShareModalCelebration(), SHARE_CELEBRATION_MS);
 };
 
