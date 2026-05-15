@@ -2759,7 +2759,7 @@ const applyResultPageChrome = () => {
   matchShareButton?.setAttribute('title', L('result.shareMatch'));
   const foot = document.querySelector('.footer.container p');
   if (foot) {
-    foot.innerHTML = `${L('common.footerDisclaimer')}<br><span class='author-highlight'>${L('common.author')}</span><br><span class='footer-friend'>${L('common.footerFriendLineHtml')}</span>`;
+    foot.innerHTML = `${L('common.footerDisclaimer')}<br><span class='author-highlight'>${L('common.authorHtml')}</span>`;
   }
   const brandSmall = document.querySelector('.brand-copy small');
   if (brandSmall) brandSmall.textContent = L('common.brandSmall');
