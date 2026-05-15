@@ -64,9 +64,11 @@
       : listPreviewVariantSuffix(profileId)
   );
 
-  const rasterAvatarFileName = (profileId, userGender = '') => {
+  const rasterAvatarFileName = (profileId, userGender = '', forceVariant = '') => {
     if (RASTER_AVATAR_EXPLICIT_IDS.has(profileId)) return `${profileId}.${RASTER_AVATAR_EXT}`;
-    const suf = rasterVariantSuffixForProfile(profileId, userGender);
+    const suf = (forceVariant === 'male' || forceVariant === 'female')
+      ? forceVariant
+      : rasterVariantSuffixForProfile(profileId, userGender);
     return `${profileId}-${suf}.${RASTER_AVATAR_EXT}`;
   };
 
@@ -74,27 +76,33 @@
    * Full-size raster (WebP, ≤1024px after optimize) for share canvas & profile hero.
    * @param {string} profileId
    * @param {string} userGender When male/female/nonbinary, picks that line; otherwise stable pseudo-random male|female per profileId (same as list thumbs).
+   * @param {string} [forceVariant] When `'male'` or `'female'`, uses that raster line for dual-line profiles (overrides userGender for catalog rotators).
    */
-  const resolveRasterAvatarUrl = (profileId, userGender = '') => {
+  const resolveRasterAvatarUrl = (profileId, userGender = '', forceVariant = '') => {
     const base = getRasterAvatarFolderHref('');
-    return joinUrl(base, rasterAvatarFileName(profileId, userGender));
+    return joinUrl(base, rasterAvatarFileName(profileId, userGender, forceVariant));
   };
 
   /**
    * Thumbnail for lists / avatar wall (generated-avatars/thumbs).
-   * @param {{ quizCompleted?: boolean, userGender?: string }} options When quizCompleted and userGender is a saved quiz line, all profiles use that line; otherwise each profile uses the same pseudo-random line as full-size URLs.
+   * @param {{ quizCompleted?: boolean, userGender?: string, forceVariant?: string }} options When `forceVariant` is `male` or `female`, uses that line for dual-line profiles. Else when quizCompleted and userGender is a saved quiz line, all profiles use that line; otherwise each profile uses pseudo-random male|female per profileId.
    */
   const resolveRasterAvatarThumbUrl = (profileId, options = {}) => {
-    const { quizCompleted = false, userGender = '' } = options;
+    const { quizCompleted = false, userGender = '', forceVariant = '' } = options;
     const base = getRasterAvatarFolderHref('thumbs/');
     let file;
     if (RASTER_AVATAR_EXPLICIT_IDS.has(profileId)) {
       file = `${profileId}.${RASTER_AVATAR_EXT}`;
     } else {
-      const hasLine = hasRasterUserGenderLine(userGender);
-      const suf = quizCompleted && hasLine
-        ? pickNeutralVariantSuffix(userGender)
-        : listPreviewVariantSuffix(profileId);
+      let suf;
+      if (forceVariant === 'male' || forceVariant === 'female') {
+        suf = forceVariant;
+      } else {
+        const hasLine = hasRasterUserGenderLine(userGender);
+        suf = quizCompleted && hasLine
+          ? pickNeutralVariantSuffix(userGender)
+          : listPreviewVariantSuffix(profileId);
+      }
       file = `${profileId}-${suf}.${RASTER_AVATAR_EXT}`;
     }
     return joinUrl(base, file);

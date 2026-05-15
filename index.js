@@ -6,6 +6,7 @@ const {
   resolveRasterAvatarThumbUrl,
   resolveRasterAvatarUrl,
   getSavedQuizGender,
+  RASTER_AVATAR_EXPLICIT_IDS,
 } = window.CPTI_DATA;
 const I18N = window.CPTI_I18N;
 const L = (path) => I18N.t(path);
@@ -21,8 +22,11 @@ const homeQuestionCount = document.querySelector('#home-question-count');
 const homeProfileCount = document.querySelector('#home-profile-count');
 const homeCatalogTitle = document.querySelector('#home-catalog-title');
 
-/** Matches `resolveRasterAvatarUrl` second arg for the latest home catalog render (hydration). */
+/** Matches `resolveRasterAvatarUrl` second arg for home catalog cards without per-card rotation (explicit single-asset profiles). */
 let homeCatalogAvatarGenderArg = '';
+
+const CATALOG_AVATAR_GENDER_ROTATE_MS = 5000;
+let homeCatalogGenderRotateTimer = null;
 
 const escAttr = (value) => String(value ?? '')
   .replace(/&/g, '&amp;')
@@ -41,8 +45,13 @@ const avatarHtml = (profile, size = 'small', listOptions = {}) => {
     quizCompleted = false,
     userGender = '',
     hydrateCatalogFull = false,
+    forceVariant,
   } = listOptions;
-  const thumbSrc = resolveRasterAvatarThumbUrl(profile.id, { quizCompleted, userGender });
+  const thumbOpts = { quizCompleted, userGender };
+  if (forceVariant === 'male' || forceVariant === 'female') {
+    thumbOpts.forceVariant = forceVariant;
+  }
+  const thumbSrc = resolveRasterAvatarThumbUrl(profile.id, thumbOpts);
   const catalogImgClass = hydrateCatalogFull ? ' class="home-catalog-avatar-img"' : '';
   return `
   <div class='avatar-shell ${size}' style='--avatar-accent:${profile.accent}; --avatar-soft:${profile.soft};'>
@@ -94,19 +103,27 @@ const topbarAvatarWallHtml = (allProfiles, rowCount = 4, listOptions) => {
 const fullCardHtml = (profile, listOptions) => {
   const lp = I18N.localizeProfile(profile);
   const rarityLabel = getProfileRarityLabel(profile.id);
+  const rotate = Boolean(listOptions.catalogAvatarRotate);
+  const explicit = RASTER_AVATAR_EXPLICIT_IDS.has(profile.id);
+  const initialVariant = rotate && !explicit ? (Math.random() < 0.5 ? 'male' : 'female') : '';
+  const cardListOptions = initialVariant
+    ? { ...listOptions, forceVariant: initialVariant }
+    : listOptions;
   return `
 
 
   <a
     class='catalog-card home-catalog-card profile-card-link'
     data-profile-id='${profile.id}'
+    data-avatar-rotatable='${rotate && !explicit ? '1' : '0'}'
+    data-avatar-variant='${initialVariant}'
     href='${profileDetailHref(profile.id, 'home')}'
     aria-label='${L('index.cardAriaTpl')(lp.name)}'
     style='--card-accent:${profile.accent}; --card-soft:${profile.soft};'
   >
     <span class='catalog-card-foil' aria-hidden='true'></span>
     <div class='catalog-card-top'>
-      ${avatarHtml(profile, 'small', listOptions)}
+      ${avatarHtml(profile, 'small', cardListOptions)}
     </div>
     <div class='catalog-card-copy'>
       <div class='catalog-name-row'>
@@ -158,7 +175,45 @@ const hasCompletedQuiz = () => {
   }
 };
 
+const stopHomeCatalogGenderRotate = () => {
+  if (homeCatalogGenderRotateTimer !== null) {
+    window.clearInterval(homeCatalogGenderRotateTimer);
+    homeCatalogGenderRotateTimer = null;
+  }
+};
+
+const flipHomeCatalogAvatarGenders = () => {
+  if (!homeCatalog) return;
+  homeCatalog.querySelectorAll('a.home-catalog-card.profile-card-link[data-avatar-rotatable="1"]').forEach((link) => {
+    const id = link.getAttribute('data-profile-id');
+    const img = link.querySelector('img.home-catalog-avatar-img');
+    if (!id || !(img instanceof HTMLImageElement)) return;
+    const cur = link.dataset.avatarVariant === 'male' ? 'male' : 'female';
+    const next = cur === 'male' ? 'female' : 'male';
+    link.dataset.avatarVariant = next;
+    img.dataset.avatarHydrated = '0';
+    img.src = resolveRasterAvatarThumbUrl(id, { forceVariant: next });
+    const loader = new Image();
+    loader.onload = () => {
+      img.src = resolveRasterAvatarUrl(id, '', next);
+      img.dataset.avatarHydrated = '1';
+    };
+    loader.onerror = () => {
+      img.dataset.avatarHydrated = 'error';
+    };
+    loader.src = resolveRasterAvatarUrl(id, '', next);
+  });
+};
+
+const startHomeCatalogGenderRotate = () => {
+  stopHomeCatalogGenderRotate();
+  if (!homeCatalog) return;
+  if (!homeCatalog.querySelector('a.home-catalog-card[data-avatar-rotatable="1"]')) return;
+  homeCatalogGenderRotateTimer = window.setInterval(flipHomeCatalogAvatarGenders, CATALOG_AVATAR_GENDER_ROTATE_MS);
+};
+
 const renderHome = () => {
+  stopHomeCatalogGenderRotate();
   const allProfiles = Object.values(profiles);
   const completed = hasCompletedQuiz();
   const userGender = getSavedQuizGender();
@@ -189,7 +244,7 @@ const renderHome = () => {
 
 
 
-    const catalogListOptions = { ...listOptions, hydrateCatalogFull: true };
+    const catalogListOptions = { ...listOptions, hydrateCatalogFull: true, catalogAvatarRotate: true };
     homeCatalog.innerHTML = previewProfiles.map((profile) => fullCardHtml(profile, catalogListOptions)).join('') + lockedCards;
   }
 
@@ -210,6 +265,7 @@ const renderHome = () => {
   }
 
   scheduleHomeCatalogAvatarHydrate();
+  startHomeCatalogGenderRotate();
 };
 
 
@@ -251,7 +307,11 @@ const scheduleHomeCatalogAvatarHydrate = () => {
       const link = img.closest('a[data-profile-id]');
       const id = link?.getAttribute('data-profile-id');
       if (!id) return;
-      const full = resolveRasterAvatarUrl(id, homeCatalogAvatarGenderArg);
+      const rot = link.dataset.avatarRotatable === '1';
+      const fv = link.dataset.avatarVariant;
+      const full = rot && (fv === 'male' || fv === 'female')
+        ? resolveRasterAvatarUrl(id, '', fv)
+        : resolveRasterAvatarUrl(id, homeCatalogAvatarGenderArg);
       const loader = new Image();
       loader.onload = () => {
         img.src = full;
@@ -390,6 +450,8 @@ const applyIndexChrome = () => {
 
 applyIndexChrome();
 I18N.mountLanguageSwitch();
+
+window.addEventListener('pagehide', stopHomeCatalogGenderRotate);
 
 renderHome();
 scheduleCrossPagePrefetch();

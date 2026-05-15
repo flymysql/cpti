@@ -10,6 +10,7 @@ const {
   buildResultQueryString,
   resolveRasterAvatarUrl,
   resolveRasterAvatarThumbUrl,
+  RASTER_AVATAR_EXPLICIT_IDS,
 } = window.CPTI_DATA;
 
 const I18N = window.CPTI_I18N;
@@ -20,8 +21,8 @@ const escAttr = (value) => String(value ?? '')
   .replace(/"/g, '&quot;')
   .replace(/</g, '&lt;');
 
-/** Matches `resolveRasterAvatarUrl` second arg for the latest result catalog render (hydration). */
-let resultCatalogAvatarGenderArg = '';
+const CATALOG_AVATAR_GENDER_ROTATE_MS = 5000;
+let resultCatalogGenderRotateTimer = null;
 
 const resultEmpty = document.querySelector('#result-empty');
 const resultView = document.querySelector('#result-view');
@@ -239,6 +240,7 @@ const loadPayload = () => {
 };
 
 const showEmptyState = (reason = 'default') => {
+  stopResultCatalogGenderRotate();
   resetShareViewerChrome();
   resultEmpty?.classList.remove('hidden');
   resultView?.classList.add('hidden');
@@ -2561,14 +2563,20 @@ const catalogHtml = (profile, selfId, needId, gender = '') => {
   const cardClass = isSelf && isNeed ? 'catalog-card is-double-active' : isSelf || isNeed ? 'catalog-card is-active' : 'catalog-card';
 
   const rarityLabel = getProfileRarityLabel(profile.id);
-  const thumbSrc = resolveRasterAvatarThumbUrl(profile.id, {
+  const explicit = RASTER_AVATAR_EXPLICIT_IDS.has(profile.id);
+  const initialVariant = !explicit ? (Math.random() < 0.5 ? 'male' : 'female') : '';
+  const thumbOpts = {
     quizCompleted: true,
     userGender: gender || '',
-  });
+    ...(initialVariant ? { forceVariant: initialVariant } : {}),
+  };
+  const thumbSrc = resolveRasterAvatarThumbUrl(profile.id, thumbOpts);
   return `
     <a
       class='${cardClass} profile-card-link result-catalog-card'
       data-profile-id='${escAttr(profile.id)}'
+      data-avatar-rotatable='${explicit ? '0' : '1'}'
+      data-avatar-variant='${initialVariant}'
       href='${profileDetailHref(profile.id, 'result')}'
       aria-label='${L('result.catalogCardAriaTpl')(lp.name)}'
       style='--card-accent:${profile.accent}; --card-soft:${profile.soft};'
@@ -2638,7 +2646,11 @@ const scheduleResultCatalogAvatarHydrate = () => {
       const link = img.closest('a[data-profile-id]');
       const id = link?.getAttribute('data-profile-id');
       if (!id) return;
-      const full = resolveRasterAvatarUrl(id, resultCatalogAvatarGenderArg);
+      const rot = link.dataset.avatarRotatable === '1';
+      const fv = link.dataset.avatarVariant;
+      const full = rot && (fv === 'male' || fv === 'female')
+        ? resolveRasterAvatarUrl(id, '', fv)
+        : resolveRasterAvatarUrl(id, '');
       const loader = new Image();
       loader.onload = () => {
         img.src = full;
@@ -2670,8 +2682,46 @@ const scheduleResultCatalogAvatarHydrate = () => {
   }
 };
 
+const stopResultCatalogGenderRotate = () => {
+  if (resultCatalogGenderRotateTimer !== null) {
+    window.clearInterval(resultCatalogGenderRotateTimer);
+    resultCatalogGenderRotateTimer = null;
+  }
+};
+
+const flipResultCatalogAvatarGenders = () => {
+  if (!profileCatalog) return;
+  profileCatalog.querySelectorAll('a.result-catalog-card.profile-card-link[data-avatar-rotatable="1"]').forEach((link) => {
+    const id = link.getAttribute('data-profile-id');
+    const img = link.querySelector('img.result-catalog-avatar-img');
+    if (!id || !(img instanceof HTMLImageElement)) return;
+    const cur = link.dataset.avatarVariant === 'male' ? 'male' : 'female';
+    const next = cur === 'male' ? 'female' : 'male';
+    link.dataset.avatarVariant = next;
+    img.dataset.avatarHydrated = '0';
+    img.src = resolveRasterAvatarThumbUrl(id, { forceVariant: next });
+    const loader = new Image();
+    loader.onload = () => {
+      img.src = resolveRasterAvatarUrl(id, '', next);
+      img.dataset.avatarHydrated = '1';
+    };
+    loader.onerror = () => {
+      img.dataset.avatarHydrated = 'error';
+    };
+    loader.src = resolveRasterAvatarUrl(id, '', next);
+  });
+};
+
+const startResultCatalogGenderRotate = () => {
+  stopResultCatalogGenderRotate();
+  if (!profileCatalog) return;
+  if (!profileCatalog.querySelector('a.result-catalog-card[data-avatar-rotatable="1"]')) return;
+  resultCatalogGenderRotateTimer = window.setInterval(flipResultCatalogAvatarGenders, CATALOG_AVATAR_GENDER_ROTATE_MS);
+};
+
 const renderComputedView = (incoming) => {
   if (!incoming?.selfProfile || !incoming?.needProfile) return;
+  stopResultCatalogGenderRotate();
   const computed = I18N.formatComputedCopy(incoming);
 
   resultEmpty?.classList.add('hidden');
@@ -2725,8 +2775,8 @@ const renderComputedView = (incoming) => {
     profileCatalog.innerHTML = Object.values(profiles)
       .map((profile) => catalogHtml(profile, computed.selfProfile.id, computed.needProfile.id, computed.gender || ''))
       .join('');
-    resultCatalogAvatarGenderArg = computed.gender || '';
     scheduleResultCatalogAvatarHydrate();
+    startResultCatalogGenderRotate();
   }
 
   lastComputed = computed;
@@ -2892,6 +2942,8 @@ const applyResultPageChrome = () => {
 
 applyResultPageChrome();
 I18N.mountLanguageSwitch();
+
+window.addEventListener('pagehide', stopResultCatalogGenderRotate);
 
 const payload = loadPayload();
 const urlParams = new URLSearchParams(window.location.search);
