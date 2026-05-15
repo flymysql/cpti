@@ -2404,7 +2404,11 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding:
+    max(12px, env(safe-area-inset-top))
+    max(12px, env(safe-area-inset-right))
+    max(12px, env(safe-area-inset-bottom))
+    max(12px, env(safe-area-inset-left));
   z-index: 60;
 }
 
@@ -2419,10 +2423,14 @@ main {
 
 .share-modal-content {
   position: relative;
-  width: min(92vw, 760px);
-  max-height: 88vh;
-  overflow: auto;
-  padding: 18px;
+  box-sizing: border-box;
+  width: min(94vw, 520px);
+  max-width: 520px;
+  max-height: min(calc(100dvh - 24px), calc(100svh - 24px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 48px 18px 14px;
   border-radius: 24px;
   background: linear-gradient(180deg, rgba(248, 250, 254, 0.98), rgba(238, 243, 249, 0.98));
   border: 1px solid rgba(117, 138, 170, 0.16);
@@ -2433,16 +2441,21 @@ main {
 
 
 .share-tip {
-  margin: 0 0 8px;
+  flex: 0 0 auto;
+  margin: 0 0 10px;
+  padding-right: 44px;
   color: rgba(34, 44, 58, 0.86);
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
+  line-height: 1.35;
 }
 
 .share-gallery {
+  flex: 0 1 auto;
+  min-height: 0;
   overflow: hidden;
   border-radius: 20px;
-  touch-action: pan-y pinch-zoom;
+  touch-action: pan-x pinch-zoom;
 }
 
 .share-gallery-track {
@@ -2456,6 +2469,9 @@ main {
   flex: 0 0 100%;
   min-width: 0;
   margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .share-image-shell {
@@ -2463,6 +2479,10 @@ main {
   position: relative;
   border-radius: 20px;
   overflow: hidden;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .share-image-close {
@@ -2496,9 +2516,13 @@ main {
 }
 
 .share-gallery-image {
-  width: 100%;
+  max-width: 100%;
+  max-height: calc(100vh - 224px);
+  max-height: calc(min(100dvh, 100svh) - 224px);
+  width: auto;
   height: auto;
   display: block;
+  object-fit: contain;
   border-radius: 20px;
   border: 1px solid rgba(117, 138, 170, 0.14);
   background: #f3f6fb;
@@ -2508,11 +2532,12 @@ main {
 }
 
 .share-gallery-footer {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 12px;
-  margin-top: 14px;
+  margin-top: 12px;
   flex-wrap: wrap;
 }
 
@@ -2540,19 +2565,6 @@ main {
 .share-indicator.is-active {
   width: 24px;
   background: linear-gradient(135deg, #ff8fc3, #8cbcff);
-}
-
-.share-gallery-nav {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-left: auto;
-}
-
-.share-gallery-nav .share-nav-button {
-  width: auto;
-  min-height: 40px;
-  padding: 8px 14px;
 }
 
 
