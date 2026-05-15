@@ -15,7 +15,13 @@ const {
 const I18N = window.CPTI_I18N;
 const L = (path) => I18N.t(path);
 
+const escAttr = (value) => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/"/g, '&quot;')
+  .replace(/</g, '&lt;');
 
+/** Matches `resolveRasterAvatarUrl` second arg for the latest result catalog render (hydration). */
+let resultCatalogAvatarGenderArg = '';
 
 const resultEmpty = document.querySelector('#result-empty');
 const resultView = document.querySelector('#result-view');
@@ -2561,7 +2567,8 @@ const catalogHtml = (profile, selfId, needId, gender = '') => {
   });
   return `
     <a
-      class='${cardClass} profile-card-link'
+      class='${cardClass} profile-card-link result-catalog-card'
+      data-profile-id='${escAttr(profile.id)}'
       href='${profileDetailHref(profile.id, 'result')}'
       aria-label='${L('result.catalogCardAriaTpl')(lp.name)}'
       style='--card-accent:${profile.accent}; --card-soft:${profile.soft};'
@@ -2569,7 +2576,7 @@ const catalogHtml = (profile, selfId, needId, gender = '') => {
       <span class='catalog-card-foil' aria-hidden='true'></span>
       <div class='catalog-card-top'>
         <div class='avatar-shell small' style='--avatar-accent:${profile.accent}; --avatar-soft:${profile.soft};'>
-          <img src="${thumbSrc}" alt="${lp.name}" loading="lazy" />
+          <img src="${escAttr(thumbSrc)}" alt="${escAttr(lp.name)}" loading="lazy" decoding="async" class="result-catalog-avatar-img" />
         </div>
       </div>
       <div class='catalog-card-copy'>
@@ -2592,6 +2599,76 @@ const catalogHtml = (profile, selfId, needId, gender = '') => {
   `;
 };
 
+/**
+ * After `load`, wait for catalog thumbnail slots (or time out), then swap to
+ * full-size avatars in an idle slice — same pattern as the home catalog.
+ */
+const waitForResultCatalogThumbSlots = (timeoutMs = 6000) => {
+  if (!profileCatalog) return Promise.resolve();
+  const imgs = profileCatalog.querySelectorAll(
+    'a.result-catalog-card.profile-card-link[data-profile-id] img.result-catalog-avatar-img',
+  );
+  const list = Array.from(imgs).filter((n) => n instanceof HTMLImageElement);
+  if (!list.length) return Promise.resolve();
+
+  const waitOne = (img) => {
+    if (img.complete) return Promise.resolve();
+    return new Promise((resolve) => {
+      img.addEventListener('load', resolve, { once: true });
+      img.addEventListener('error', resolve, { once: true });
+    });
+  };
+
+  return Promise.race([
+    Promise.all(list.map(waitOne)),
+    new Promise((resolve) => {
+      window.setTimeout(resolve, timeoutMs);
+    }),
+  ]);
+};
+
+const scheduleResultCatalogAvatarHydrate = () => {
+  if (!profileCatalog) return;
+
+  const hydrateFullRaster = () => {
+    profileCatalog.querySelectorAll(
+      'a.result-catalog-card.profile-card-link[data-profile-id] img.result-catalog-avatar-img',
+    ).forEach((img) => {
+      if (!(img instanceof HTMLImageElement) || img.dataset.avatarHydrated === '1') return;
+      const link = img.closest('a[data-profile-id]');
+      const id = link?.getAttribute('data-profile-id');
+      if (!id) return;
+      const full = resolveRasterAvatarUrl(id, resultCatalogAvatarGenderArg);
+      const loader = new Image();
+      loader.onload = () => {
+        img.src = full;
+        img.dataset.avatarHydrated = '1';
+      };
+      loader.onerror = () => {
+        img.dataset.avatarHydrated = 'error';
+      };
+      loader.src = full;
+    });
+  };
+
+  const kickIdleHydrate = () => {
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(() => hydrateFullRaster(), { timeout: 3200 });
+    } else {
+      window.setTimeout(hydrateFullRaster, 400);
+    }
+  };
+
+  const afterLoad = () => {
+    waitForResultCatalogThumbSlots().then(() => kickIdleHydrate());
+  };
+
+  if (document.readyState === 'complete') {
+    afterLoad();
+  } else {
+    window.addEventListener('load', afterLoad, { once: true });
+  }
+};
 
 const renderComputedView = (incoming) => {
   if (!incoming?.selfProfile || !incoming?.needProfile) return;
@@ -2648,6 +2725,8 @@ const renderComputedView = (incoming) => {
     profileCatalog.innerHTML = Object.values(profiles)
       .map((profile) => catalogHtml(profile, computed.selfProfile.id, computed.needProfile.id, computed.gender || ''))
       .join('');
+    resultCatalogAvatarGenderArg = computed.gender || '';
+    scheduleResultCatalogAvatarHydrate();
   }
 
   lastComputed = computed;
