@@ -2607,6 +2607,7 @@ main {
   z-index: 85;
   pointer-events: none;
   overflow: hidden;
+  isolation: isolate;
 }
 
 .share-celebration-layer .share-celebration-spark {
@@ -2625,9 +2626,17 @@ main {
   animation-duration: 6.6s;
 }
 
+.share-celebration-layer--lite .share-celebration-spark {
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  margin-top: -6px;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.9), var(--c, #ff8fc3) 70%);
+  box-shadow: 0 0 10px var(--c, #ffffff);
+}
 @keyframes share-celebration-burst {
   0% {
-    transform: translate(0, 0) scale(0.2);
+    transform: translate3d(0, 0, 0) scale(0.2);
     opacity: 0;
   }
   4% {
@@ -2640,7 +2649,7 @@ main {
     opacity: 0.55;
   }
   100% {
-    transform: translate(var(--sx, 0px), var(--sy, 0px)) scale(0.06);
+    transform: translate3d(var(--sx, 0px), var(--sy, 0px), 0) scale(0.06);
     opacity: 0;
   }
 }
