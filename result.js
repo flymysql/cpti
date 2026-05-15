@@ -21,8 +21,24 @@ const escAttr = (value) => String(value ?? '')
   .replace(/"/g, '&quot;')
   .replace(/</g, '&lt;');
 
-const CATALOG_AVATAR_GENDER_ROTATE_MS = 5000;
-let resultCatalogGenderRotateTimer = null;
+const randCatalogFlipDelayMs = () => 4000 + Math.floor(Math.random() * 4001);
+
+const catalogAvatarSlideEnabled = () => !window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+
+/** @type {Map<string, number>} */
+const resultCatalogFlipTimeouts = new Map();
+
+const clearResultCatalogFlipTimeout = (profileId) => {
+  const t = resultCatalogFlipTimeouts.get(profileId);
+  if (t != null) window.clearTimeout(t);
+  resultCatalogFlipTimeouts.delete(profileId);
+};
+
+const waitNextCssTransitionEndResult = (el, maxMs = 700) => new Promise((resolve) => {
+  const done = () => resolve();
+  el.addEventListener('transitionend', done, { once: true });
+  window.setTimeout(done, maxMs);
+});
 
 const resultEmpty = document.querySelector('#result-empty');
 const resultView = document.querySelector('#result-view');
@@ -2642,7 +2658,7 @@ const scheduleResultCatalogAvatarHydrate = () => {
     profileCatalog.querySelectorAll(
       'a.result-catalog-card.profile-card-link[data-profile-id] img.result-catalog-avatar-img',
     ).forEach((img) => {
-      if (!(img instanceof HTMLImageElement) || img.dataset.avatarHydrated === '1') return;
+      if (!(img instanceof HTMLImageElement) || img.dataset.avatarHydrated === '1' || img.dataset.catalogSlideActive === '1') return;
       const link = img.closest('a[data-profile-id]');
       const id = link?.getAttribute('data-profile-id');
       if (!id) return;
@@ -2683,40 +2699,122 @@ const scheduleResultCatalogAvatarHydrate = () => {
 };
 
 const stopResultCatalogGenderRotate = () => {
-  if (resultCatalogGenderRotateTimer !== null) {
-    window.clearInterval(resultCatalogGenderRotateTimer);
-    resultCatalogGenderRotateTimer = null;
-  }
+  resultCatalogFlipTimeouts.forEach((t) => window.clearTimeout(t));
+  resultCatalogFlipTimeouts.clear();
 };
 
-const flipResultCatalogAvatarGenders = () => {
-  if (!profileCatalog) return;
-  profileCatalog.querySelectorAll('a.result-catalog-card.profile-card-link[data-avatar-rotatable="1"]').forEach((link) => {
-    const id = link.getAttribute('data-profile-id');
-    const img = link.querySelector('img.result-catalog-avatar-img');
-    if (!id || !(img instanceof HTMLImageElement)) return;
-    const cur = link.dataset.avatarVariant === 'male' ? 'male' : 'female';
-    const next = cur === 'male' ? 'female' : 'male';
+const scheduleNextResultCatalogFlip = (link) => {
+  const id = link.getAttribute('data-profile-id');
+  if (!id || !link.isConnected || !profileCatalog?.contains(link)) return;
+  clearResultCatalogFlipTimeout(id);
+  const delay = randCatalogFlipDelayMs();
+  const t = window.setTimeout(() => {
+    resultCatalogFlipTimeouts.delete(id);
+    if (!link.isConnected || !profileCatalog?.contains(link)) return;
+    void runResultCatalogAvatarFlipOnce(link);
+  }, delay);
+  resultCatalogFlipTimeouts.set(id, t);
+};
+
+const runResultCatalogAvatarFlipOnce = async (link) => {
+  const id = link.getAttribute('data-profile-id');
+  const img = link.querySelector('img.result-catalog-avatar-img');
+  if (!id || !(img instanceof HTMLImageElement) || !link.isConnected) return;
+
+  const cur = link.dataset.avatarVariant === 'male' ? 'male' : 'female';
+  const next = cur === 'male' ? 'female' : 'male';
+  const thumbSrc = resolveRasterAvatarThumbUrl(id, { forceVariant: next });
+  const fullSrc = resolveRasterAvatarUrl(id, '', next);
+
+  img.dataset.catalogSlideActive = '1';
+  try {
+    if (!catalogAvatarSlideEnabled()) {
+      link.dataset.avatarVariant = next;
+      img.dataset.avatarHydrated = '0';
+      img.src = thumbSrc;
+      const loader = new Image();
+      let fullOk = false;
+      await new Promise((resolve) => {
+        loader.onload = () => {
+          fullOk = true;
+          resolve();
+        };
+        loader.onerror = () => {
+          fullOk = false;
+          resolve();
+        };
+        loader.src = fullSrc;
+      });
+      if (link.isConnected && img.isConnected) {
+        if (fullOk) {
+          img.src = fullSrc;
+          img.dataset.avatarHydrated = '1';
+        } else {
+          img.dataset.avatarHydrated = 'error';
+        }
+      }
+      return;
+    }
+
+    img.classList.add('catalog-avatar-slide--exit');
+    await waitNextCssTransitionEndResult(img);
+
     link.dataset.avatarVariant = next;
+    img.classList.remove('catalog-avatar-slide--exit');
+    img.classList.add('catalog-avatar-slide--preenter');
+    void img.offsetWidth;
     img.dataset.avatarHydrated = '0';
-    img.src = resolveRasterAvatarThumbUrl(id, { forceVariant: next });
+    img.src = thumbSrc;
+    try {
+      await img.decode();
+    } catch {
+      /* ignore */
+    }
+
     const loader = new Image();
-    loader.onload = () => {
-      img.src = resolveRasterAvatarUrl(id, '', next);
-      img.dataset.avatarHydrated = '1';
-    };
-    loader.onerror = () => {
-      img.dataset.avatarHydrated = 'error';
-    };
-    loader.src = resolveRasterAvatarUrl(id, '', next);
-  });
+    let fullOk = false;
+    const loadFull = new Promise((resolve) => {
+      loader.onload = () => {
+        fullOk = true;
+        resolve();
+      };
+      loader.onerror = () => {
+        fullOk = false;
+        resolve();
+      };
+    });
+    loader.src = fullSrc;
+
+    await new Promise((resolve) => {
+      window.requestAnimationFrame(() => window.requestAnimationFrame(resolve));
+    });
+    img.classList.remove('catalog-avatar-slide--preenter');
+    img.classList.add('catalog-avatar-slide--enter');
+    await Promise.all([waitNextCssTransitionEndResult(img), loadFull]);
+    img.classList.remove('catalog-avatar-slide--enter');
+
+    if (link.isConnected && img.isConnected) {
+      if (fullOk) {
+        img.src = fullSrc;
+        img.dataset.avatarHydrated = '1';
+      } else {
+        img.dataset.avatarHydrated = 'error';
+      }
+    }
+  } finally {
+    delete img.dataset.catalogSlideActive;
+    if (link.isConnected && profileCatalog?.contains(link)) {
+      scheduleNextResultCatalogFlip(link);
+    }
+  }
 };
 
 const startResultCatalogGenderRotate = () => {
   stopResultCatalogGenderRotate();
   if (!profileCatalog) return;
-  if (!profileCatalog.querySelector('a.result-catalog-card[data-avatar-rotatable="1"]')) return;
-  resultCatalogGenderRotateTimer = window.setInterval(flipResultCatalogAvatarGenders, CATALOG_AVATAR_GENDER_ROTATE_MS);
+  const links = profileCatalog.querySelectorAll('a.result-catalog-card[data-avatar-rotatable="1"]');
+  if (!links.length) return;
+  links.forEach((link) => scheduleNextResultCatalogFlip(link));
 };
 
 const renderComputedView = (incoming) => {
