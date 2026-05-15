@@ -2605,6 +2605,44 @@ main {
   background: linear-gradient(135deg, #ff8fc3, #8cbcff);
 }
 
+.share-celebration-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.share-celebration-spark {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  margin-left: -3px;
+  margin-top: -3px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.95), var(--c, #ff8fc3) 58%);
+  box-shadow: 0 0 14px var(--c, #ffffff);
+  opacity: 0;
+  animation: share-celebration-burst 2.15s ease-out forwards;
+}
+
+@keyframes share-celebration-burst {
+  0% {
+    transform: translate(0, 0) scale(0.35);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  52% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate(var(--sx, 0px), var(--sy, 0px)) scale(0.12);
+    opacity: 0;
+  }
+}
+
 
 
 
