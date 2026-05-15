@@ -129,8 +129,11 @@
         <div class='share-modal hidden' id='share-modal' role='dialog' aria-modal='true'>
           <button class='share-modal-backdrop' type='button' aria-label='关闭分享预览' id='share-backdrop'></button>
           <div class='share-modal-content'>
-            <button class='share-image-close share-modal-close' type='button' id='share-close' aria-label='关闭分享预览'>×</button>
-            <p class='share-tip'>长按图片保存到本地分享</p>
+            <div class='share-modal-toprow'>
+              <span class='share-toprow-balance' aria-hidden='true'></span>
+              <p class='share-tip'>长按图片保存到本地分享</p>
+              <button class='share-image-close share-modal-close' type='button' id='share-close' aria-label='关闭分享预览'>×</button>
+            </div>
             <div class='share-gallery' id='share-gallery' aria-label='分享图片预览轮播'>
               <div class='share-gallery-track' id='share-track'></div>
             </div>
