@@ -2634,6 +2634,7 @@ main {
   background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.9), var(--c, #ff8fc3) 70%);
   box-shadow: 0 0 10px var(--c, #ffffff);
 }
+
 @keyframes share-celebration-burst {
   0% {
     transform: translate3d(0, 0, 0) scale(0.2);
