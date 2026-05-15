@@ -383,7 +383,7 @@ const applyIndexChrome = () => {
   }
   const foot = document.querySelector('.footer.container p');
   if (foot) {
-    foot.innerHTML = `${L('index.footerHtml')}<br><span class='author-highlight'>${L('common.author')}</span>`;
+    foot.innerHTML = `${L('index.footerHtml')}<br><span class='author-highlight'>${L('common.author')}</span><br><span class='footer-friend'>${L('common.footerFriendLineHtml')}</span>`;
   }
   document.documentElement.lang = I18N.getLocale() === 'en' ? 'en' : 'zh-CN';
 };

@@ -2367,6 +2367,21 @@ main {
   justify-content: center;
 }
 
+.footer .footer-friend {
+  display: block;
+  margin-top: 2px;
+}
+
+.footer .footer-friend a {
+  color: rgba(17, 17, 17, 0.72);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.footer .footer-friend a:hover {
+  color: rgba(17, 17, 17, 0.92);
+}
+
 .footer-inline-counter {
   display: flex;
   align-items: center;
