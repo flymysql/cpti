@@ -2367,18 +2367,14 @@ main {
   justify-content: center;
 }
 
-.footer .footer-friend {
-  display: block;
-  margin-top: 2px;
-}
-
-.footer .footer-friend a {
+.footer .author-highlight a {
   color: rgba(17, 17, 17, 0.72);
   text-decoration: underline;
   text-underline-offset: 2px;
+  font-weight: 600;
 }
 
-.footer .footer-friend a:hover {
+.footer .author-highlight a:hover {
   color: rgba(17, 17, 17, 0.92);
 }
 
