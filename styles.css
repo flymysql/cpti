@@ -2617,6 +2617,18 @@ body.page-result .footer {
   pointer-events: none;
   overflow: hidden;
   isolation: isolate;
+  --celebration-star-clip: polygon(
+    50% 2%,
+    61% 38%,
+    98% 38%,
+    68% 60%,
+    79% 96%,
+    50% 74%,
+    21% 96%,
+    32% 60%,
+    2% 38%,
+    39% 38%
+  );
 }
 
 .share-celebration-layer .share-celebration-spark {
@@ -2625,7 +2637,9 @@ body.page-result .footer {
   height: 30px;
   margin-left: -15px;
   margin-top: -15px;
-  border-radius: 50%;
+  border-radius: 0;
+  clip-path: var(--celebration-star-clip);
+  -webkit-clip-path: var(--celebration-star-clip);
   background: radial-gradient(circle at 32% 28%, #ffffff 0%, #ffffff 22%, var(--c, #ff8fc3) 52%, var(--c, #ff8fc3) 100%);
   box-shadow: 0 0 28px var(--c, #ffffff), 0 0 56px rgba(255, 255, 255, 0.4);
   opacity: 0;
@@ -2640,7 +2654,6 @@ body.page-result .footer {
   height: 24px;
   margin-left: -12px;
   margin-top: -12px;
-  border-radius: 50%;
   background: radial-gradient(circle at 34% 30%, #ffffff 0%, #ffffff 32%, var(--c, #ff8fc3) 62%, var(--c, #ff8fc3) 100%);
   box-shadow: 0 0 18px var(--c, #ffffff);
   animation-name: share-celebration-burst-lite;
