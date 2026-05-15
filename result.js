@@ -34,6 +34,7 @@ const floatingShareActions = document.querySelector('#floating-share-actions');
 const shareButton = document.querySelector('#share-result');
 const matchShareButton = document.querySelector('#share-match-result');
 const shareModal = document.querySelector('#share-modal');
+const shareCelebrationHost = document.querySelector('#share-celebration-host');
 
 const shareBackdrop = document.querySelector('#share-backdrop');
 const shareClose = document.querySelector('#share-close');
@@ -84,7 +85,13 @@ let shareCarouselHoldStartX = 0;
 let shareCarouselHoldStartY = 0;
 const SHARE_CAROUSEL_INTERVAL_MS = 5000;
 const SHARE_CAROUSEL_PAUSE_HOLD_MS = 450;
-const SHARE_CELEBRATION_MS = 2800;
+/** Longer celebration; sparks animate ~6.6s, host clears after full window. */
+const SHARE_CELEBRATION_MS = 7000;
+
+const shareGalleryWidthCapPx = () => {
+  const vw = window.innerWidth;
+  return Math.max(120, Math.floor(Math.min(vw * 0.94, vw - 32) - 96));
+};
 
 const maxShareGalleryImageCssHeight = () => {
   const vh = typeof window.visualViewport?.height === 'number'
@@ -114,38 +121,50 @@ const clearShareGalleryLayoutStyles = () => {
   });
 };
 
-const removeShareOpenCelebration = () => {
+const clearShareModalCelebration = () => {
   document.querySelector('.share-celebration-layer')?.remove();
+  if (shareCelebrationHost) shareCelebrationHost.innerHTML = '';
 };
 
 const startShareOpenCelebration = () => {
   if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-  removeShareOpenCelebration();
-  const layer = document.createElement('div');
-  layer.className = 'share-celebration-layer';
-  layer.setAttribute('aria-hidden', 'true');
-  const colors = ['#ff8fc3', '#8cbcff', '#ffd280', '#a8e6ff', '#c9b3ff', '#ffffff'];
-  const burstCount = 3;
+  if (!shareCelebrationHost || shareModal?.classList.contains('hidden')) return;
+  clearShareModalCelebration();
+
+  const colors = ['#ff8fc3', '#8cbcff', '#ffd280', '#a8e6ff', '#c9b3ff', '#ffffff', '#ffb8d9'];
+  const burstCount = 8;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const distScale = Math.max(vw, vh) / 100;
+
   for (let b = 0; b < burstCount; b += 1) {
-    const cx = 16 + Math.random() * 68;
-    const cy = 18 + Math.random() * 48;
-    const rays = 20 + Math.floor(Math.random() * 8);
+    const edge = Math.random();
+    const cx = edge < 0.34
+      ? 4 + Math.random() * 22
+      : edge < 0.67
+        ? 78 + Math.random() * 18
+        : 18 + Math.random() * 64;
+    const cy = edge < 0.5
+      ? 8 + Math.random() * 38
+      : 52 + Math.random() * 40;
+    const rays = 36 + Math.floor(Math.random() * 16);
     for (let i = 0; i < rays; i += 1) {
       const p = document.createElement('span');
       p.className = 'share-celebration-spark';
-      const ang = (Math.PI * 2 * i) / rays + (Math.random() - 0.5) * 0.35;
-      const dist = 80 + Math.random() * 160;
+      const ang = (Math.PI * 2 * i) / rays + (Math.random() - 0.5) * 0.45;
+      const dist = (22 + Math.random() * 42) * distScale;
       p.style.left = `${cx}%`;
       p.style.top = `${cy}%`;
       p.style.setProperty('--sx', `${Math.cos(ang) * dist}px`);
       p.style.setProperty('--sy', `${Math.sin(ang) * dist}px`);
       p.style.setProperty('--c', colors[i % colors.length]);
-      p.style.animationDelay = `${b * 0.14 + Math.random() * 0.22}s`;
-      layer.appendChild(p);
+      p.style.animationDelay = `${b * 0.38 + Math.random() * 0.35}s`;
+      p.style.animationDuration = `${6.4 + Math.random() * 0.6}s`;
+      shareCelebrationHost.appendChild(p);
     }
   }
-  document.body.appendChild(layer);
-  window.setTimeout(() => layer.remove(), SHARE_CELEBRATION_MS);
+
+  window.setTimeout(() => clearShareModalCelebration(), SHARE_CELEBRATION_MS);
 };
 
 const getShareQrLandingUrl = () => {
@@ -2340,7 +2359,7 @@ const syncShareGalleryLayoutMetrics = () => {
     if (w > maxDisp) maxDisp = w;
   });
 
-  const cap = Math.floor(window.innerWidth * 0.96 - 20);
+  const cap = shareGalleryWidthCapPx();
   const maxW = Math.min(maxDisp, cap);
   if (maxW < 40) {
     shareGallerySlidePx = 0;
@@ -2423,7 +2442,7 @@ const closeShareModal = () => {
   shareCarouselPaused = false;
   shareCarouselHoldActive = false;
   clearShareCarouselHoldTimer();
-  removeShareOpenCelebration();
+  clearShareModalCelebration();
   clearShareGalleryLayoutStyles();
   shareModal?.classList.add('hidden');
   document.body.style.overflow = '';
