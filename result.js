@@ -40,8 +40,6 @@ const shareClose = document.querySelector('#share-close');
 const shareGallery = document.querySelector('#share-gallery');
 const shareTrack = document.querySelector('#share-track');
 const shareIndicators = document.querySelector('#share-indicators');
-const sharePrevButton = document.querySelector('#share-prev');
-const shareNextButton = document.querySelector('#share-next');
 const profileCatalog = document.querySelector('#profile-catalog');
 const resultEmptyTitle = document.querySelector('#result-empty-title');
 const resultEmptyCopy = document.querySelector('#result-empty-copy');
@@ -2255,26 +2253,11 @@ const renderShareIndicators = () => {
   `).join('');
 };
 
-const updateShareNavState = () => {
-
-  const hasMultipleSlides = shareModalSlides.length > 1;
-  sharePrevButton?.classList.toggle('hidden', !hasMultipleSlides);
-  shareNextButton?.classList.toggle('hidden', !hasMultipleSlides);
-
-  if (sharePrevButton) {
-    sharePrevButton.disabled = !hasMultipleSlides;
-  }
-  if (shareNextButton) {
-    shareNextButton.disabled = !hasMultipleSlides;
-  }
-};
-
 const updateShareGallery = () => {
   if (!shareTrack) return;
 
   shareTrack.style.transform = `translateX(-${activeShareSlideIndex * 100}%)`;
   renderShareIndicators();
-  updateShareNavState();
 };
 
 const setActiveShareSlide = (index = 0) => {
@@ -2572,9 +2555,6 @@ shareIndicators?.addEventListener('click', (event) => {
   setActiveShareSlide(nextIndex);
 });
 
-sharePrevButton?.addEventListener('click', showPrevShareSlide);
-shareNextButton?.addEventListener('click', showNextShareSlide);
-
 shareGallery?.addEventListener('touchstart', (event) => {
   if (shareModalSlides.length <= 1) return;
   shareTouchStartX = event.changedTouches[0]?.clientX ?? null;
@@ -2651,8 +2631,6 @@ const applyResultPageChrome = () => {
   shareIndicators?.setAttribute('aria-label', L('result.shareIndicatorsAria'));
   shareBackdrop?.setAttribute('aria-label', L('result.shareModalClose'));
   shareClose?.setAttribute('aria-label', L('result.shareModalClose'));
-  if (sharePrevButton) sharePrevButton.textContent = L('result.sharePrev');
-  if (shareNextButton) shareNextButton.textContent = L('result.shareNext');
   setFloatingButtonLabel(shareButton, L('result.shareSelf'));
   setFloatingButtonLabel(matchShareButton, L('result.shareMatch'));
   shareButton?.setAttribute('aria-label', L('result.shareSelfAria'));
