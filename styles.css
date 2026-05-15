@@ -2350,7 +2350,18 @@ main {
 
 
 .footer {
-  padding: 0 0 calc(32px + env(safe-area-inset-bottom));
+  padding: 0 max(16px, env(safe-area-inset-left)) calc(32px + env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-right));
+  box-sizing: border-box;
+}
+
+/** Reserve horizontal space for fixed floating share buttons (column, bottom-right). */
+body.page-result .footer {
+  padding-inline-end: max(16px, calc(env(safe-area-inset-right) + 176px));
+}
+
+body.page-result.is-share-viewer .footer {
+  padding-inline-end: max(16px, env(safe-area-inset-right));
 }
 
 .footer p {
