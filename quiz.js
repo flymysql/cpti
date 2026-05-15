@@ -38,10 +38,9 @@ const stageToastCopy = document.querySelector('#stage-toast-copy');
 
 let isSubmitBarVisible = false;
 let stageToastTimer = null;
-let stageProgressTimer = null;
-let milestonePulseTimer = null;
 
-
+/** Stage-completion toast only (no overall-progress % toasts). */
+const STAGE_TOAST_MS = 3000;
 
 const initialState = {
   answers: {},
@@ -49,45 +48,18 @@ const initialState = {
   gender: '',
 };
 
-const milestoneAnnounced = new Set();
-
-const QUIZ_TOAST_MIN_ANSWER_GAP = 4;
-let lastQuizToastAtAnswered = -Infinity;
 const pendingStageTransitionIndices = [];
-
-const getAnsweredCountForToasts = () => countAnswered(state.answers);
-
-const canShowQuizToastNow = () => getAnsweredCountForToasts() - lastQuizToastAtAnswered >= QUIZ_TOAST_MIN_ANSWER_GAP;
-
-const markQuizToastShown = () => {
-  lastQuizToastAtAnswered = getAnsweredCountForToasts();
-};
 
 const enqueueStageTransition = (completedStageIndex) => {
   const queue = pendingStageTransitionIndices;
-  if (queue.length && queue[queue.length - 1] === completedStageIndex) return;
+  if (queue.includes(completedStageIndex)) return;
   queue.push(completedStageIndex);
 };
 
 const tryFlushQuizToasts = () => {
-  if (pendingStageTransitionIndices.length) {
-    if (!canShowQuizToastNow()) return;
-    const idx = pendingStageTransitionIndices.shift();
-    markQuizToastShown();
-    showStageTransition(idx);
-    return;
-  }
-  tryAnnounceMilestoneNow();
-};
-
-const restoreMilestoneFlags = (answers = {}) => {
-  const answered = countAnswered(answers);
-  const total = questions.length;
-  if (!total) return;
-  const ratio = answered / total;
-  [25, 50, 75].forEach((pct) => {
-    if (ratio >= pct / 100 - 0.0001) milestoneAnnounced.add(pct);
-  });
+  if (!pendingStageTransitionIndices.length) return;
+  const idx = pendingStageTransitionIndices.shift();
+  showStageTransition(idx);
 };
 
 const stageGroups = questions.reduce((groups, question, index) => {
@@ -166,7 +138,6 @@ const loadProgress = () => {
 };
 
 const state = loadProgress();
-restoreMilestoneFlags(state.answers);
 
 const isQuestionAnswered = (question, answers = {}) => {
   if (question.kind === 'rank') return normalizeRankAnswer(question, answers[question.id]).length === question.options.length;
@@ -460,42 +431,19 @@ const hideStageToast = () => {
   }
 };
 
-const pulseStageProgress = () => {
-  if (!stageFloatingProgress) return;
-  if (stageProgressTimer) window.clearTimeout(stageProgressTimer);
-  stageFloatingProgress.classList.remove('is-celebrating');
-  void stageFloatingProgress.offsetWidth;
-  stageFloatingProgress.classList.add('is-celebrating');
-  stageProgressTimer = window.setTimeout(() => {
-    stageFloatingProgress.classList.remove('is-celebrating');
-  }, 900);
-};
-
-const pulseMilestoneProgress = () => {
-  if (!stageFloatingProgress) return;
-  if (milestonePulseTimer) window.clearTimeout(milestonePulseTimer);
-  stageFloatingProgress.classList.remove('is-milestone-pulse');
-  void stageFloatingProgress.offsetWidth;
-  stageFloatingProgress.classList.add('is-milestone-pulse');
-  milestonePulseTimer = window.setTimeout(() => {
-    stageFloatingProgress.classList.remove('is-milestone-pulse');
-  }, 900);
-};
-
 const showStageToastMessage = ({
   kicker,
   title,
   copy,
-  duration = 5600,
-  micro = false,
+  duration = STAGE_TOAST_MS,
 } = {}) => {
   if (!stageToast) return;
   stageToastKicker.textContent = kicker;
   stageToastTitle.textContent = title;
   stageToastCopy.textContent = copy;
-  stageToast.classList.toggle('is-micro', micro);
+  stageToast.classList.remove('is-micro');
   if (stageToastCast) {
-    stageToastCast.hidden = micro;
+    stageToastCast.hidden = false;
   }
 
   if (stageToastTimer) window.clearTimeout(stageToastTimer);
@@ -503,12 +451,6 @@ const showStageToastMessage = ({
   stageToast.classList.remove('is-visible');
   void stageToast.offsetWidth;
   stageToast.classList.add('is-visible');
-
-  if (micro) {
-    pulseMilestoneProgress();
-  } else {
-    pulseStageProgress();
-  }
 
   stageToastTimer = window.setTimeout(() => {
     hideStageToast();
@@ -527,27 +469,7 @@ const showStageTransition = (completedStageIndex) => {
     kicker: nextStage ? L('quiz.stageAdvanceKicker') : L('quiz.stageAllDoneKicker'),
     title: nextStage ? (typeof L('quiz.stageEnterTpl') === 'function' ? L('quiz.stageEnterTpl')(nextCat || nextStage.category) : nextCat) : L('quiz.stageAllStagesDone'),
     copy: completedCopy.completion,
-    duration: 6200,
-    micro: false,
-  });
-};
-
-const tryAnnounceMilestoneNow = () => {
-  const answered = countAnswered(state.answers);
-  const total = questions.length;
-  if (!total || answered === 0) return;
-  if (!canShowQuizToastNow()) return;
-  const ratio = answered / total;
-  const pct = [25, 50, 75].find((p) => ratio >= p / 100 && !milestoneAnnounced.has(p));
-  if (pct == null) return;
-  const payload = I18N.getMilestoneBlock(pct);
-  if (!payload) return;
-  milestoneAnnounced.add(pct);
-  markQuizToastShown();
-  showStageToastMessage({
-    ...payload,
-    duration: 3800,
-    micro: true,
+    duration: STAGE_TOAST_MS,
   });
 };
 
