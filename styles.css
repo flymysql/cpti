@@ -2621,12 +2621,12 @@ body.page-result .footer {
 
 .share-celebration-layer .share-celebration-spark {
   position: absolute;
-  width: 24px;
-  height: 24px;
-  margin-left: -12px;
-  margin-top: -12px;
+  width: 30px;
+  height: 30px;
+  margin-left: -15px;
+  margin-top: -15px;
   border-radius: 50%;
-  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.95), var(--c, #ff8fc3) 58%);
+  background: radial-gradient(circle at 32% 28%, #ffffff 0%, #ffffff 22%, var(--c, #ff8fc3) 52%, var(--c, #ff8fc3) 100%);
   box-shadow: 0 0 28px var(--c, #ffffff), 0 0 56px rgba(255, 255, 255, 0.4);
   opacity: 0;
   animation-name: share-celebration-burst;
@@ -2636,17 +2636,19 @@ body.page-result .footer {
 }
 
 .share-celebration-layer--lite .share-celebration-spark {
-  width: 14px;
-  height: 14px;
-  margin-left: -7px;
-  margin-top: -7px;
-  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.9), var(--c, #ff8fc3) 70%);
-  box-shadow: 0 0 10px var(--c, #ffffff);
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  margin-top: -12px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #ffffff 0%, #ffffff 32%, var(--c, #ff8fc3) 62%, var(--c, #ff8fc3) 100%);
+  box-shadow: 0 0 18px var(--c, #ffffff);
+  animation-name: share-celebration-burst-lite;
 }
 
 @keyframes share-celebration-burst {
   0% {
-    transform: translate3d(0, 0, 0) scale(0.2);
+    transform: translate3d(0, 0, 0) scale(0.32);
     opacity: 0;
   }
   4% {
@@ -2656,10 +2658,30 @@ body.page-result .footer {
     opacity: 1;
   }
   78% {
-    opacity: 0.55;
+    opacity: 0.68;
   }
   100% {
-    transform: translate3d(var(--sx, 0px), var(--sy, 0px), 0) scale(0.06);
+    transform: translate3d(var(--sx, 0px), var(--sy, 0px), 0) scale(0.12);
+    opacity: 0;
+  }
+}
+
+@keyframes share-celebration-burst-lite {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.42);
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  48% {
+    opacity: 1;
+  }
+  82% {
+    opacity: 0.82;
+  }
+  100% {
+    transform: translate3d(var(--sx, 0px), var(--sy, 0px), 0) scale(0.18);
     opacity: 0;
   }
 }
