@@ -284,6 +284,52 @@ const scheduleHomeCatalogAvatarHydrate = () => {
 };
 
 
+/** After first paint + idle, prefetch other routes so navigation feels instant (HTTP cache). */
+const prefetchSeenAbs = new Set();
+
+const appendPrefetchLink = (href, as = '') => {
+  let abs;
+  try {
+    abs = new URL(href, window.location.href).href;
+  } catch {
+    return;
+  }
+  if (prefetchSeenAbs.has(abs)) return;
+  prefetchSeenAbs.add(abs);
+  const link = document.createElement('link');
+  link.rel = 'prefetch';
+  link.href = abs;
+  if (as) link.setAttribute('as', as);
+  document.head.appendChild(link);
+};
+
+const scheduleCrossPagePrefetch = () => {
+  const kick = () => {
+    const run = () => {
+      appendPrefetchLink(I18N.withLang('./quiz.html'), 'document');
+      appendPrefetchLink(I18N.withLang('./result.html'), 'document');
+      appendPrefetchLink(profileDetailHref('daddy', 'home'), 'document');
+
+      appendPrefetchLink('./questions-locale-en.js', 'script');
+      appendPrefetchLink('./quiz.js', 'script');
+      appendPrefetchLink('./result.js', 'script');
+      appendPrefetchLink('./profile-details.js', 'script');
+      appendPrefetchLink('./profile-details-en.js', 'script');
+      appendPrefetchLink('./profile.js', 'script');
+    };
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(run, { timeout: 6000 });
+    } else {
+      window.setTimeout(run, 400);
+    }
+  };
+
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(kick);
+  });
+};
+
+
 const applyIndexChrome = () => {
   document.title = L('index.docTitle');
   document.querySelector('meta[name="description"]')?.setAttribute('content', L('index.metaDesc'));
@@ -346,3 +392,4 @@ applyIndexChrome();
 I18N.mountLanguageSwitch();
 
 renderHome();
+scheduleCrossPagePrefetch();
