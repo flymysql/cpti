@@ -2167,6 +2167,32 @@ main {
   box-shadow: none;
 }
 
+/* Catalog avatar gender swap: slide out left, next frame slides in from right */
+.home-catalog-card .avatar-shell.small img.home-catalog-avatar-img,
+.result-catalog-card .avatar-shell.small img.result-catalog-avatar-img {
+  transition: transform 0.38s cubic-bezier(0.33, 1, 0.68, 1), opacity 0.36s ease;
+  will-change: transform;
+}
+
+.home-catalog-card .avatar-shell.small img.home-catalog-avatar-img.catalog-avatar-slide--exit,
+.result-catalog-card .avatar-shell.small img.result-catalog-avatar-img.catalog-avatar-slide--exit {
+  transform: translate3d(-108%, 0, 0);
+  opacity: 0.42;
+}
+
+.home-catalog-card .avatar-shell.small img.home-catalog-avatar-img.catalog-avatar-slide--preenter,
+.result-catalog-card .avatar-shell.small img.result-catalog-avatar-img.catalog-avatar-slide--preenter {
+  transition: none !important;
+  transform: translate3d(108%, 0, 0) !important;
+  opacity: 0.42;
+}
+
+.home-catalog-card .avatar-shell.small img.home-catalog-avatar-img.catalog-avatar-slide--enter,
+.result-catalog-card .avatar-shell.small img.result-catalog-avatar-img.catalog-avatar-slide--enter {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+}
+
 
 .catalog-card-copy {
   position: relative;
